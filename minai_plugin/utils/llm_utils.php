@@ -113,21 +113,55 @@ function callLLM($messages, $model = null, $options = []) {
         $promptLog .= "\n";
 
         // Use provided model or fall back to configured model
-        $s_con_diary = $NPC_CONF["CONNECTORS_DIARY"] ?? 'openai';
-        
-        if (!$model && isset($GLOBALS['CONNECTOR'][$s_con_diary]['model'])) {
-            $model = $GLOBALS['CONNECTOR'][$s_con_diary]['model'];
+        //$s_con_diary = $NPC_CONF["CONNECTORS_DIARY"] ?? '';
+        //if (strlen($s_con_diary) > 0) {
+        //    $s_model  = $GLOBALS['CONNECTOR'][$s_con_diary]['model'] ?? '';
+        //}
+        if (isset($GLOBALS["CONNECTOR"][$GLOBALS["CURRENT_CONNECTOR"]])) {
+            $s_model = $GLOBALS["CONNECTOR"][$GLOBALS["CURRENT_CONNECTOR"]]["model"] ?? '';
+            $s_con_diary = $GLOBALS["CURRENT_CONNECTOR"] ?? '';
+        } elseif (isset($GLOBALS["CHIM_CORE_CURRENT_CONNECTOR_DATA"])) {
+            //$connector=new LLMConnector();
+            //$connectionHandler = $connector->getConnector($GLOBALS["CHIM_CORE_CURRENT_CONNECTOR_DATA"]);
+            //Logger::debug("[CORE SYSTEM] Using new profile system {$GLOBALS["CHIM_CORE_CURRENT_CONNECTOR_DATA"]["driver"]}/{$GLOBALS["CHIM_CORE_CURRENT_CONNECTOR_DATA"]["model"]}");
+            $s_con_diary = $GLOBALS["CHIM_CORE_CURRENT_CONNECTOR_DATA"]["driver"] ?? '';
+            $s_model = $GLOBALS["CHIM_CORE_CURRENT_CONNECTOR_DATA"]["model"] ?? '';
         }
+
+        /*
+        if (isset($GLOBALS["CONNECTOR"][$NPC_CONF["CONNECTORS_DIARY"]]["max_tokens"]) && $GLOBALS["CONNECTOR"][$NPC_CONF["CONNECTORS_DIARY"]]["max_tokens"] !== '') {
+            $maxTokens = (int)$GLOBALS["CONNECTOR"][$NPC_CONF["CONNECTORS_DIARY"]]["max_tokens"];
+        } elseif (isset($GLOBALS["CONNECTOR"][$NPC_CONF["CONNECTORS_DIARY"]]["MAX_TOKENS_MEMORY"])) {
+            $maxTokens = (int)$GLOBALS["CONNECTOR"][$NPC_CONF["CONNECTORS_DIARY"]]["MAX_TOKENS_MEMORY"];
+        } else {
+            $maxTokens = 2048;
+        }
+        if (isset($GLOBALS["CHIM_CORE_CURRENT_CONNECTOR_DATA"])) {
+            //$connector=new LLMConnector();
+            //$connectionHandler = $connector->getConnector($GLOBALS["CHIM_CORE_CURRENT_CONNECTOR_DATA"]);
+            //Logger::debug("[CORE SYSTEM] Using new profile system {$GLOBALS["CHIM_CORE_CURRENT_CONNECTOR_DATA"]["driver"]}/{$GLOBALS["CHIM_CORE_CURRENT_CONNECTOR_DATA"]["model"]}");
+            $s_model = $GLOBALS["CHIM_CORE_CURRENT_CONNECTOR_DATA"]["model"] ?? '';
+            $s_con_diary = $GLOBALS["CHIM_CORE_CURRENT_CONNECTOR_DATA"]["driver"] ?? '';
+        } else {
         
-        if (!$model) {
-            minai_log("info", "callLLM: No model specified");
+        */
+        
+        if (!$model && (strlen($s_model)>0)) {
+            $model = $s_model;
+        }
+
+        if ((strlen($model)<=0)) {
+            //minai_log("info", "callLLM: No model specified");
+            error_log("[callLLM] No connector model info");
             return null;
         }
+
 
         // Get API URL and key from globals
         if (!isset($GLOBALS['CONNECTOR'][$s_con_diary]['url']) || 
             !isset($GLOBALS['CONNECTOR'][$s_con_diary]['API_KEY'])) {
-            minai_log("info", "callLLM: Missing $s_con_diary configuration");
+            //minai_log("info", "callLLM: Missing $s_con_diary configuration");
+            error_log("[callLLM] Missing $s_con_diary configuration ");
             return null;
         }
 
@@ -169,19 +203,22 @@ function callLLM($messages, $model = null, $options = []) {
         $result = file_get_contents($url, false, $context);
 
         if ($result === false) {
-            minai_log("info", "callLLM: Request failed");
+            //minai_log("info", "callLLM: Request failed");
+            error_log("[callLLM] Missing Request failed ");
             return null;
         }
 
         $response = json_decode($result, true);
         if (json_last_error() !== JSON_ERROR_NONE) {
-            minai_log("info", "callLLM: Invalid JSON response: " . json_last_error_msg());
+            //minai_log("info", "callLLM: Invalid JSON response: " . json_last_error_msg());
+            error_log("[callLLM] Invalid JSON response: " . json_last_error_msg());
             return null;
         }
 
         if (!isset($response['choices'][0]['message']['content'])) {
             minai_log("info", "callLLM: Unexpected response format");
             minai_log("debug", "callLLM: Response: " . json_encode($response));
+            error_log("[callLLM] Unexpected response format ");
             return null;
             //SetLLMFallbackProfile();
             //return callLLM($messages, $GLOBALS['CONNECTOR']['openrouter']['model'], $options);

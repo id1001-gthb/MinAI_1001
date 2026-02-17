@@ -11,25 +11,95 @@ require_once($path. "lib" .DIRECTORY_SEPARATOR."{$GLOBALS["DBDRIVER"]}.class.php
 $GLOBALS["db"] = new sql();
 // Fix missing config.php warning
 $pluginPath = "/var/www/html/HerikaServer/ext/minai_plugin";
-if (!file_exists("$pluginPath/config.php")) {
-    copy("$pluginPath/config.base.php", "$pluginPath/config.php");
+if (!file_exists("{$pluginPath}/config.php")) {
+    copy("{$pluginPath}/config.base.php", "{$pluginPath}/config.php");
 }
 require_once("..".DIRECTORY_SEPARATOR."config.php");
 require_once("..".DIRECTORY_SEPARATOR."importDataToDB.php");
 require_once("..".DIRECTORY_SEPARATOR."util.php");
 require_once("..".DIRECTORY_SEPARATOR."db_utils.php");
 
-$startScript = "/var/www/html/HerikaServer/ext/minai_plugin/m_init.sh";
-if (file_exists($startScript)) {
-    $output = [];
-    $retval = null;
-    $res = exec($startScript, $output, $retval);
-    $res = $res ? $res : "F";
-    error_log("exec {$startScript} res={$res} return code={$retval} output: " . print_r($output,true));
-} else 
-    error_log("file not found: {$startScript} ");
+$b_do_patch = false;
+$b_do_clean = false;
 
-InitiateDBTables();
+$s_chim_version = getChimVersionFile(); // get CHIM version from .version_number.txt
+$s_prev_version = getChimVersion(); //getConfOptionValue
+if ($s_chim_version != $s_prev_version) {
+    $b_do_patch = true;
+    setChimVersion($s_chim_version);
+} 
+
+$s_min_ver = getMinaiVersionFile();
+$s_min_prev_ver = getMinaiVersion();
+if ($s_min_ver != $s_min_prev_ver) {
+    $b_do_patch = true;
+    setMinaiVersion($s_min_ver);
+} 
+
+$i_crt = time();
+$i_dtime = $i_crt - getLastRun();
+if ($i_dtime > 4096) {
+    $b_do_patch = true;
+    $b_do_clean = true;
+    setLastRun($i_crt);
+}
+
+if ($b_do_patch) {
+
+    $startScript = "/var/www/html/HerikaServer/ext/minai_plugin/utils/xtra/m_patch_all.sh";
+    if (file_exists($startScript)) {
+        $output = [];
+        $retval = null;
+        $res = exec($startScript, $output, $retval);
+        $res = $res ? $res : "F";
+        error_log("[api/main] exec {$startScript} res={$res} return code={$retval} output: " . print_r($output,true));
+    } else 
+        error_log("[api/main] file not found: {$startScript} ");
+    
+    // ENFORCE_ACTIONS_PROMPT
+    try {
+
+        $db = $GLOBALS['db'];
+        
+        $query = " UPDATE public.core_llm_connector SET metadata['remove_action_prompt'] = 'false'; ";
+        $db->execQuery($query);        
+                    
+        $query = " UPDATE public.core_npc_master SET extended_data['ENFORCE_ACTIONS_PROMPT'] = 'true'; ";
+        $db->execQuery($query);        
+
+        $query = " UPDATE public.core_profiles SET metadata['ENFORCE_ACTIONS_PROMPT'] = 'true'; ";
+        $db->execQuery($query);        
+        
+        error_log("[init] action prompts patch done. ");
+        
+    } catch (Exception $e) {
+        $b_ok = false;
+        error_log("[init] ERROR patching action prompts " . $e->getMessage());
+    }                
+    
+}
+
+if ($b_do_clean) {
+
+    $startScript = "/var/www/html/HerikaServer/ext/minai_plugin/m_init.sh";
+    if (file_exists($startScript)) {
+        $output = [];
+        $retval = null;
+        $res = exec($startScript, $output, $retval);
+        $res = $res ? $res : "F";
+        error_log("[api/main] exec {$startScript} res={$res} return code={$retval} output: " . print_r($output,true));
+    } else 
+        error_log("[api/main] file not found: {$startScript} ");
+
+    // CHIM action editor is incompatible with MinAI
+    $s_filter_file = "/var/www/html/HerikaServer/functions/user_pref.json"; //__DIR__."/../../../functions/user_pref.json"; 
+    if (is_file($s_filter_file)) {
+        error_log("[api/main] found actions filter: s_filter_file "); // debug
+        unlink($s_filter_file);
+    }
+
+    InitiateDBTables();
+}
 
 $requestMethod = $_SERVER['REQUEST_METHOD'];
 $data = json_decode(file_get_contents("php://input"), true);

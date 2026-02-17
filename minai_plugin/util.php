@@ -11,6 +11,9 @@ require_once("db_utils.php");
 require_once("importDataToDB.php");
 require_once("mind_influence.php");
 
+require_once("/var/www/html/HerikaServer/lib/data_functions.php");
+require_once("/var/www/html/HerikaServer/lib/chat_helper_functions.php");
+
 $GLOBALS[MINAI_ACTOR_VALUE_CACHE] = [];
 $targetOverride = null;
 if (!isset($GLOBALS["db"]))
@@ -444,7 +447,7 @@ function PreloadCommonActorData() {
         "isChild", 
         "CanVibrate", 
         "isVibratorActive",
-		"isNaked",
+				"isNaked",
         "enableAISex"
     ];
     
@@ -456,6 +459,7 @@ function PreloadCommonActorData() {
         "arousal", 
         "Scene",
         "relationshipRank",
+				"inCombatState",
         "playerName"
     ];
     
@@ -586,6 +590,11 @@ Function ShouldEnableHarassFunctions($name) {
     $arousalThreshold = GetActorValue($GLOBALS['PLAYER_NAME'], "arousalForHarass");
     $arousal = GetActorValue($name, "arousal");
     if (empty($arousalThreshold) || empty($arousal)) {
+        // If the config isn't set, default to enabled.
+        // User may also not have arousal mod, so default to enabled
+        return true;
+    }
+    if ((intval($arousalThreshold) == 0) || (intval($arousal) == 0)) {
         // If the config isn't set, default to enabled.
         // User may also not have arousal mod, so default to enabled
         return true;
@@ -830,25 +839,137 @@ Function ClearRadiantActors() {
     $db->delete("conf_opts", "id='_minai_RADIANT//initial'");
 }
 
+function getSListener() 
+{
+    $s_res = '';
+
+    if (isset($GLOBALS["SCRIPTLINE_LISTENER"])) {
+        if (is_array($GLOBALS["SCRIPTLINE_LISTENER"]) && (sizeof($GLOBALS["SCRIPTLINE_LISTENER"]) > 0) && is_string($GLOBALS["SCRIPTLINE_LISTENER"][0])) {
+            $GLOBALS["SCRIPTLINE_LISTENER"] = $GLOBALS["SCRIPTLINE_LISTENER"][0];
+        }
+        $s_res = $GLOBALS["SCRIPTLINE_LISTENER"] ?? '';
+    } //else 
+        //error_log("[util] SCRIPTLINE_LISTENER not defined - warning ".__FILE__." ".__LINE__); // debug
+    
+    return $s_res;
+}
+
 Function GetTargetActor() {
     global $targetOverride;
+
+    $s_target = "";
+    $speaker = "";
+    $bx = true;
+
     if($targetOverride) {
-        return $targetOverride;
+        //error_log("[util] targetOverride: $targetOverride - debug ".__FILE__." ".__LINE__); // debug
+        $bx = false;
+        $s_target = $targetOverride;
     }
-    $db = $GLOBALS['db'];
-    $query = "select * from conf_opts where id='_minai_RADIANT//actor1'";
-    $ret1 = $GLOBALS["db"]->fetchAll($query);
-    if (!$ret1)
-        return $GLOBALS["PLAYER_NAME"];
-    $query = "select * from conf_opts where id='_minai_RADIANT//actor2'";
-    $ret2 = $GLOBALS["db"]->fetchAll($query);
-    if (!$ret2)
-        return $GLOBALS["PLAYER_NAME"];
-    if ($GLOBALS['HERIKA_NAME'] == $ret1[0]['value'])
-        return $ret2[0]['value'];
-    if ($GLOBALS['HERIKA_NAME'] == $ret2[0]['value'])
-        return $ret1[0]['value'];
-    return $GLOBALS["PLAYER_NAME"];
+    
+    $b_saved = isset($GLOBALS["ORIGINAL_HERIKA_NAME"]) && (strlen($GLOBALS["ORIGINAL_HERIKA_NAME"])>0);
+    if ($b_saved) {
+        $speaker = $GLOBALS["ORIGINAL_HERIKA_NAME"];
+        //error_log("[util] speaker={$speaker} PLAYER_NAME={$GLOBALS["PLAYER_NAME"]} - warning ".__FILE__." ".__LINE__); // debug
+    } 
+        
+    if (strlen($speaker) < 1)
+        $speaker = $GLOBALS['HERIKA_NAME'];
+    if ($speaker == 'The Narrator') {
+        
+    }
+    
+    if (isset($GLOBALS["target"])) {
+        if ((strlen($GLOBALS["target"])>0) && ($speaker != $GLOBALS["target"]) && ($speaker != $GLOBALS["PLAYER_NAME"])) {
+            $s_target = $GLOBALS["target"];
+            $bx = false;
+        }
+    }
+
+    //$GLOBALS["HERIKA_TARGET"] ?? $GLOBALS["PLAYER_NAME"] $GLOBALS["HERIKA_TARGET"];
+    //if (($bx) && ($speaker != 'The Narrator'))
+    //    error_log("[util] start: target=".($GLOBALS["target"]??'')." HERIKA_TARGET=".($GLOBALS["HERIKA_TARGET"]??'')." speaker={$speaker} PLAYER_NAME={$GLOBALS["PLAYER_NAME"]} - warning ".__FILE__." ".__LINE__); // debug
+
+    if (strlen($s_target) < 1) {
+        $s_target = getSListener();
+        /*
+        if (isset($GLOBALS["SCRIPTLINE_LISTENER"]))  {
+            if (is_array($GLOBALS["SCRIPTLINE_LISTENER"]) && (sizeof($GLOBALS["SCRIPTLINE_LISTENER"]) > 0) && (is_string($GLOBALS["SCRIPTLINE_LISTENER"][0]))) {
+                $s_target = $GLOBALS["SCRIPTLINE_LISTENER"][0];
+            } else 
+                $s_target = $GLOBALS["SCRIPTLINE_LISTENER"];
+        } else 
+            error_log("[util] SCRIPTLINE_LISTENER not defined - warning ".__FILE__." ".__LINE__); // debug
+        */
+    }
+
+    //if ($bx && (strlen($s_target) > 0) && ($s_target != $GLOBALS["PLAYER_NAME"])) { 
+    //    error_log("[util] SCRIPTLINE_LISTENER: $s_target speaker={$speaker} - debug ".__FILE__." ".__LINE__); // debug
+    //    $bx = false;
+    //}
+
+    if (strlen($s_target) < 1) {
+        $db = $GLOBALS['db'];
+        
+        $actor1 = "";
+        $actor2 = "";
+        
+        $query = "select * from conf_opts where id='_minai_RADIANT//actor1'";
+        $ret1 = $GLOBALS["db"]->fetchAll($query);
+        if ($ret1) {
+            $actor1 = $ret1[0]['value'] ?? "";
+            if ($speaker == $actor1) { // no good, get actor 2
+                $query = "select * from conf_opts where id='_minai_RADIANT//actor2'";
+                $ret2 = $GLOBALS["db"]->fetchAll($query);
+                if ($ret2) {
+                    $actor2 = $ret2[0]['value'] ?? "";
+                    if ((strlen($actor2) > 0) && ($speaker != $actor2)) { // good
+                        $s_target = $actor2;
+                    }
+                }
+            } else {
+                $s_target = $actor1;
+            }
+        }
+    }
+
+    //if ($bx && (strlen($s_target) > 0) && ($s_target != $GLOBALS["PLAYER_NAME"])) { 
+    //    error_log("[util] _minai_RADIANT: $s_target speaker={$speaker} - debug ".__FILE__." ".__LINE__); // debug
+    //    $bx = false;
+    //}
+
+    if (strlen($s_target) < 1) {
+        $db = $GLOBALS['db'];
+        
+        $actor1 = $speaker;
+        
+        $query = "SELECT speaker, listener FROM public.moods_issued WHERE speaker='{$actor1}' ORDER BY rowid DESC LIMIT 1 ";
+        $ret1 = $GLOBALS["db"]->fetchAll($query);
+        if ($ret1) {
+            $actor2 = $ret1[0]['listener'] ?? "";
+            if ((strlen($actor2)>0) && ($actor2 != $actor1)) {
+                $s_target = $actor2;
+            }
+        }
+        
+    }
+
+    //if ($bx && (strlen($s_target) > 0) && ($s_target != $GLOBALS["PLAYER_NAME"])) { 
+    //    error_log("[util] moods_issued: $s_target speaker={$speaker} - debug ".__FILE__." ".__LINE__); // debug
+    //    $bx = false;
+    //}
+    
+    if (strlen($s_target) < 1) {
+        $s_target = $GLOBALS["PLAYER_NAME"];
+        $s_ht = ($GLOBALS["HERIKA_TARGET"] ?? "");
+        if ((strlen($s_ht) > 0) && ($speaker != $s_ht))
+            $s_target = $GLOBALS["HERIKA_TARGET"];
+    }
+
+    //if ($bx && (strlen($s_target) > 0) && ($s_target != $GLOBALS["PLAYER_NAME"]))  
+    //    error_log("[util] last resort: $s_target speaker={$speaker}- debug ".__FILE__." ".__LINE__); // debug
+    
+    return $s_target;
 }
 
 Function IsNewRadiantConversation() {
@@ -1286,6 +1407,17 @@ function deleteConfOption($key = "") {
     } 
     return $s_res;
 }
+
+function deleteAllConfOptions($key = "") {
+    $s_res = "";
+    if (strlen($key) > 0) {
+        $s_id = $GLOBALS['db']->escape(strtolower($key));
+        $sql = "DELETE FROM public.conf_opts WHERE (id ILIKE '{$s_id}') ";
+        $s_res = $GLOBALS['db']->execQueryVerbose($sql);
+    } 
+    return $s_res;
+}
+    
     
 function GetAdverseInteractions($s_npc_name, $s_player_name) {
     
@@ -1348,6 +1480,24 @@ function getFilesRecursively($pattern) {
     }
 }
 
+function mn_trim_json($str2trim) {
+    $s_res = $str2trim;
+
+    // before {
+    $l_pos = strpos($str2trim, '{');
+    if ($l_pos !== false) {
+        if ($l_pos > 0)
+            $s_res = strstr($str2trim, '{');
+        // after }
+        $r_pos = strrpos($s_res, '}');
+        if ($r_pos !== false) {
+            if ($r_pos < (strlen($s_res) - 1))
+                $s_res = substr($s_res, 0, ($r_pos + 1));
+        } else $s_res = '';
+    } else $s_res = '';
+
+    return $s_res;
+}
     
 function getChimExecMode() {
     /* Check modes
@@ -1397,5 +1547,103 @@ function getChimExecMode() {
     }
 }
 
+// get CHIM version from file "/var/www/html/HerikaServer/.version_number.txt"
+function getChimVersionFile() {
+    $chim_version_file = "/var/www/html/HerikaServer/.version_number.txt";
+    $chim_version = '2.0.0'; // fallback
+    if (file_exists($chim_version_file)) {
+        $s_ver = strtolower(trim(file_get_contents($chim_version_file)));
+        if (strlen($s_ver) > 0) {
+            $chim_version = $s_ver;
+        }
+    }
+    return $chim_version;
+} 
+
+// get MinAI version from file  "/var/www/html/HerikaServer/ext/minai_plugin/version.txt"
+function getMinaiVersionFile() {
+    $minai_version_file = "/var/www/html/HerikaServer/ext/minai_plugin/version.txt";
+    $minai_version = '2.3.1'; // fallback
+    if (file_exists($minai_version_file)) {
+        $s_ver = strtolower(trim(file_get_contents($minai_version_file)));
+        if (strlen($s_ver) > 0) {
+            $minai_version = $s_ver;
+        }
+    }
+    return $minai_version;
+} 
+
+
+function getChimVersion() {
+    return getConfOptionValue("_minai_global_CHIM_version", false);
+}
+
+function setChimVersion($s_version = "") {
+    setConfOption("_minai_global_CHIM_version", trim($s_version));
+}
+
+function getMinaiVersion() {
+    return getConfOptionValue("_minai_global_version", false);
+}
+
+function setMinaiVersion($s_version = "") {
+    setConfOption("_minai_global_version", trim($s_version));
+}
+
+function getLastRun() {
+    return intval(getConfOptionValue("_minai_global_LastRun"));
+}
+
+function setLastRun($i_time = 0) {
+    if ($i_time > 0)
+        setConfOption("_minai_global_LastRun", $i_time);
+    else 
+        setConfOption("_minai_global_LastRun", time());
+}
+
+function m_remove_before($str2trim, $trim_before_separator) {
+    $s_res = $str2trim;
+
+    $i_pos = strpos($str2trim, $trim_before_separator);
+    if ($i_pos !== false) {
+        if ($i_pos > 0)
+            $s_res = strstr($str2trim, $trim_before_separator);
+    }
+
+    return $s_res;
+}
+
+function m_remove_after($str2trim, $trim_after_separator) {
+    $s_res = $str2trim;
+    
+    $i_pos = strrpos($str2trim, $trim_after_separator);
+    if ($i_pos !== false) {
+        if ($i_pos < (strlen($str2trim) - 1))
+            $s_res = substr($str2trim, 0, ($i_pos + 1));
+    }    
+    
+    return $s_res;
+}
+
+function m_remove_both_ends($str2trim, $trim_before_separator, $trim_after_separator) {
+    $s_res = $str2trim;
+    
+    // before
+    $i_pos = strpos($str2trim, $trim_before_separator);
+    if ($i_pos !== false) {
+        if ($i_pos > 0)
+            $s_res = strstr($str2trim, $trim_before_separator);
+    }
+    // after
+    $i_pos = strrpos($s_res, $trim_after_separator);
+    if ($i_pos !== false) {
+        if ($i_pos < (strlen($s_res) - 1))
+            $s_res = substr($s_res, 0, ($i_pos + 1));
+    }
+    
+    return $s_res;
+}
+
+    
 require_once("contextbuilders/wornequipment_context.php");
 require_once("utils/init_common_variables.php");

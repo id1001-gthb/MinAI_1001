@@ -185,7 +185,9 @@ if ($GLOBALS["function_eligibility_cache"]["clear_follower"]) {
         $allowed_functions[] = 'SearchMemory';
     if (in_array('Attack', $GLOBALS["ENABLED_FUNCTIONS"]))
         $allowed_functions[] = 'Attack'; // Should this be enabled?
-
+    
+    if (!in_array('CheckInventory', $GLOBALS["ENABLED_FUNCTIONS"]))
+        $allowed_functions[] = 'CheckInventory';
     $GLOBALS["ENABLED_FUNCTIONS"] = $allowed_functions;
 }
 else {
@@ -250,6 +252,16 @@ $defeatCooldown = !empty($lastDefeat) && (time() - intval($lastDefeat) < 300);
 $inCombat = IsEnabled($GLOBALS["HERIKA_NAME"], "inCombat");
 $isFollower = IsFollower($GLOBALS["HERIKA_NAME"]);
 $inScene = IsSexActiveSpeaker(); 
+
+
+//Anyx animation plugin:
+if (isset($GLOBALS['ai_kinematics_functions_list'])) {
+    if (count($GLOBALS['ai_kinematics_functions_list'])>0) {
+        $GLOBALS["ENABLED_FUNCTIONS"] = array_unique(array_merge($GLOBALS['ai_kinematics_functions_list'], $GLOBALS["ENABLED_FUNCTIONS"]));
+        //error_log("->functions: " . implode(' . ', $GLOBALS["ENABLED_FUNCTIONS"])); // debug
+    }
+}
+
 
 if (!isset($GLOBALS["commands_to_purge"]))
     $GLOBALS["commands_to_purge"] = [];
@@ -351,5 +363,4 @@ $GLOBALS["ENABLED_FUNCTIONS_COPY"] = $GLOBALS["ENABLED_FUNCTIONS"] ?? [];
 
 minai_stop_timer('functions_php');
 
-//error_log("->functions end: " . implode(' . ', $GLOBALS["ENABLED_FUNCTIONS"]));
-
+//error_log("->functions: " . implode(' . ', $GLOBALS["ENABLED_FUNCTIONS"])); // debug

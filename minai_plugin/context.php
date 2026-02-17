@@ -1,4 +1,6 @@
 <?php
+// not to be included explicitly, must be included only via requireFilesRecursively() L 2101
+
 // Start metrics for this entry point
 require_once("utils/metrics_util.php");
 minai_start_timer('context_php', 'MinAI');
@@ -19,28 +21,78 @@ require_once("utils/prompt_slop_cleanup.php");
 minai_start_timer("contextProcessing", "context_php");
 
 
+// Cache target actor
+$GLOBALS["target"] = GetTargetActor();
+$GLOBALS["target_gender"] = GetGender($GLOBALS["target"]); //Is Female($GLOBALS["target"]) ? "female" : "male";
+$GLOBALS["target_pronouns"] = GetActorPronouns($GLOBALS["target"]);
 
-//error_log("->functions ctx: " . implode(' . ', $GLOBALS["ENABLED_FUNCTIONS"]));
+
+// if context.php is required before head[] assignment
+//requireFilesRecursively(__DIR__.DIRECTORY_SEPARATOR."ext".DIRECTORY_SEPARATOR,"context.php");
+
+if (!isset($GLOBALS['head'])) {
+	
+	if (!empty($GLOBALS["OGHMA_HINT"])) {
+
+		$GLOBALS['head'][] = array('role' => 'system', 'content' =>  
+			strtr($GLOBALS["PROMPT_HEAD"] . "\n\n".
+			$GLOBALS["HERIKA_PERS"]."\n\n". 
+			$GLOBALS["dynamicBiography"]."\n\n" .  //$dynamicBiography . "\n\n" . 
+			$GLOBALS["OGHMA_HINT"]."\n\n". 
+			$GLOBALS["COMMAND_PROMPT"]."\n\n".
+			$GLOBALS["actionsList"]."\n\n". //$actionsList.
+			$GLOBALS["nearbySections"]."\n\n". //$nearbySections.
+			$GLOBALS["paralinguisticTagsPrompt"]."\n\n". //$paralinguisticTagsPrompt.
+			$GLOBALS["rumorsText"], // "\n{$rumorsText}\n",
+			["#PLAYER_NAME#"=>$GLOBALS["PLAYER_NAME"],"#HERIKA_NAME#"=>$GLOBALS["HERIKA_NAME"]])
+
+		);
+		//avoid reinjecting command prompt that we have already appended
+		$GLOBALS["COMMAND_PROMPT"] = "";
+	} else {
+		$GLOBALS['head'][] = array('role' => 'system', 'content' =>  
+			strtr(
+			$GLOBALS["PROMPT_HEAD"]."\n\n".
+			$GLOBALS["HERIKA_PERS"]."\n\n". 
+			$GLOBALS["dynamicBiography"]."\n\n" .  
+			$GLOBALS["COMMAND_PROMPT"]."\n\n".
+			$GLOBALS["actionsList"]."\n\n". 
+			$GLOBALS["nearbySections"]."\n\n". 
+			$GLOBALS["paralinguisticTagsPrompt"]."\n\n". 
+			$GLOBALS["rumorsText"], 
+			["#PLAYER_NAME#"=>$GLOBALS["PLAYER_NAME"],
+			 "#HERIKA_NAME#"=>$GLOBALS["HERIKA_NAME"]])
+		);
+		//avoid reinjecting command prompt that we have already appended
+		$GLOBALS["COMMAND_PROMPT"] = "";
+	} 
+	
+	$GLOBALS["COMMAND_PROMPT"] = "";
+	error_log("[context.php] head assigned. - exec trace "); // debug
+}
+
+//error_log("->functions ctx: " . implode(' . ', $GLOBALS["ENABLED_ FUNCTIONS"]));
 /*
-if (isset($GLOBALS["ENABLED_FUNCTIONS"]) && (count($GLOBALS["ENABLED_FUNCTIONS"])>0)) {
-	//$s_ef = implode(' . ', $GLOBALS["ENABLED_FUNCTIONS"];
-	if (count($GLOBALS["ENABLED_FUNCTIONS"]) < count($GLOBALS["ENABLED_FUNCTIONS_COPY"])) {
+if (isset($GLOBALS["ENABLED_ FUNCTIONS"]) && (count($GLOBALS["ENABLED_ FUNCTIONS"])>0)) {
+	//$s_ef = implode(' . ', $GLOBALS["ENABLED_ FUNCTIONS"];
+	if (count($GLOBALS["ENABLED_ FUNCTIONS"]) < count($GLOBALS["ENABLED_ FUNCTIONS_COPY"])) {
 		if (
-			//(!in_array('ExtCmdIncreaseArousal',$GLOBALS["ENABLED_FUNCTIONS"])) && 
-			//(!in_array('ExtCmdDecreaseArousal',$GLOBALS["ENABLED_FUNCTIONS"])) && 
-			(!in_array('ExtCmdGiveItem',$GLOBALS["ENABLED_FUNCTIONS"])) && 
-			(!in_array('ExtCmdTakeItem',$GLOBALS["ENABLED_FUNCTIONS"])) && 
-			(!in_array('ExtCmdTrade',$GLOBALS["ENABLED_FUNCTIONS"])) && 
-			(!in_array('ExtCmdStartLooting',$GLOBALS["ENABLED_FUNCTIONS"])) && 
-			(!in_array('ExtCmdStopLooting',$GLOBALS["ENABLED_FUNCTIONS"])) && 
-			(!in_array('ExtCmdFollow',$GLOBALS["ENABLED_FUNCTIONS"]))  
+			//(!in_array('ExtCmdIncreaseArousal',$GLOBALS["ENABLED_ FUNCTIONS"])) && 
+			//(!in_array('ExtCmdDecreaseArousal',$GLOBALS["ENABLED_ FUNCTIONS"])) && 
+			(!in_array('ExtCmdGiveItem',$GLOBALS["ENABLED_ FUNCTIONS"])) && 
+			(!in_array('ExtCmdTakeItem',$GLOBALS["ENABLED_ FUNCTIONS"])) && 
+			(!in_array('ExtCmdTrade',$GLOBALS["ENABLED_ FUNCTIONS"])) && 
+			(!in_array('ExtCmdStartLooting',$GLOBALS["ENABLED_ FUNCTIONS"])) && 
+			(!in_array('ExtCmdStopLooting',$GLOBALS["ENABLED_ FUNCTIONS"])) && 
+			(!in_array('ExtCmdFollow',$GLOBALS["ENABLED_ FUNCTIONS"]))  
 		){ 	// broken functions
-			$GLOBALS["ENABLED_FUNCTIONS"] = $GLOBALS["ENABLED_FUNCTIONS_COPY"];
+			$GLOBALS["ENABLED_ FUNCTIONS"] = $GLOBALS["ENABLED_ FUNCTIONS_COPY"];
 			error_log("Warning: functions replaced from copy. ");
 		}
 	}
 }
 */
+
 
 //---------------------------------------------------------------------------
 // Slop cleanup:
@@ -330,7 +382,8 @@ if (isset($GLOBALS['head'])) { // clean system (head) prompt
 
 if (isset($GLOBALS["contextDataFull"])) { // clean context array parsing all elements
 	$GLOBALS['contextDataFull'] = CustomContextProcess($GLOBALS['contextDataFull'], $str_to_clean_list, $replacements_dictionary); 
-}
+} else 
+	error_log("[context.php] ERROR contextDataFull not defined! ".__FILE__." ".__LINE__); // error
 
 if (isset($GLOBALS["FUNCTIONS_ARE_ENABLED"]) && $GLOBALS["FUNCTIONS_ARE_ENABLED"]) { // clean function descriptions (targets)
 
@@ -349,8 +402,16 @@ if (isset($GLOBALS["FUNCTIONS_ARE_ENABLED"]) && $GLOBALS["FUNCTIONS_ARE_ENABLED"
 }
 
 if (isset($GLOBALS["TTS_FFMPEG_FILTERS"]["tempo"])) {
-	error_log($GLOBALS["TTS_FFMPEG_FILTERS"]["tempo"] . " - exec trace ");
-	//='atempo=1.15';
+	$s_tempo = $GLOBALS["TTS_FFMPEG_FILTERS"]["tempo"];  
+	error_log("TTS_FFMPEG_FILTERS {$s_tempo} - exec trace " .__FILE__." ".__LINE__); // debug
+
+	if (stripos($s_tempo,"atempo=0.") !== false ) {
+		$GLOBALS["TTS_FFMPEG_FILTERS"]["tempo"] = 'atempo=0.95'; 
+	} else {
+		if (stripos($s_tempo,"atempo=1.") !== false ) { //='atempo=1.45';
+			$GLOBALS["TTS_FFMPEG_FILTERS"]["tempo"] = 'atempo=1.05'; 
+		}
+	}
 }
 
 //--------------------------------------------------------------
@@ -476,5 +537,22 @@ minai_stop_timer('contextProcessing');
 UpdateSystemPrompt();
 
 require "/var/www/html/HerikaServer/ext/minai_plugin/command_prompt_custom.php";
+
+//error_log("-- context php -- ENFORCE_ACTIONS_PROMPT=".$GLOBALS["ENFORCE_ACTIONS_PROMPT"]); // debug
+
+$s_minp = trim($GLOBALS["MINAI_ACTION_PROMPT"] ?? '');
+
+if (strlen($s_minp) > 0) {
+	//$GLOBALS["contextDataFull"][] = array('role' => 'user', 'content' => $s_minp); // not last entry, not effective
+	$GLOBALS["ENFORCE_ACTIONS_PROMPT"] = true;
+	$GLOBALS["PATCH_PROMPT_ENFORCE_ACTIONS"] = true;
+	$GLOBALS["COMMAND_PROMPT_ENFORCE_ACTIONS"] = $s_minp; // ."\n". $GLOBALS["COMMAND_PROMPT_ENFORCE_ACTIONS"];
+
+    setConfOption("_minai_action_prompt", $s_minp);
+
+} else {
+	error_log("[context php] {$GLOBALS["HERIKA_NAME"]} NO PROMPT! ENFORCE_ACTIONS_PROMPT=".$GLOBALS["ENFORCE_ACTIONS_PROMPT"]); // debug
+}
+
 minai_stop_timer('context_php');
 // minai_stop_timer('Pre-LLM');

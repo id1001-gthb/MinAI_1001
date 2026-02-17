@@ -80,9 +80,19 @@ function InitializeCoreContextBuilders() {
         'section' => 'misc',
         'header' => 'Oghma Infinium Lore',
         'description' => 'Lore Information from the Oghma Infinium.',
-        'priority' => 25,
+        'priority' => 30,
         'enabled' => true,
         'builder_callback' => 'BuildOghmaInfiniumContext'
+    ]);
+
+    // Rumors context builder
+    $registry->register('rumors_and_gossips', [
+        'section' => 'misc',
+        'header' => 'Rumors and gossips',
+        'description' => 'Rumors and gossips.',
+        'priority' => 35,
+        'enabled' => true,
+        'builder_callback' => 'BuildRumorsContext'
     ]);
     
 }
@@ -105,10 +115,19 @@ function StrCleanBullets($s_input = ""){
  * @return string Formatted Oghma Infinium context
  */
 function BuildOghmaInfiniumContext($params) {
-
+    
     if (isset($GLOBALS["OGHMA_HINT"]) && (!empty($GLOBALS["OGHMA_HINT"])) ) {
         //error_log("oghma minai: ". ($GLOBALS["OGHMA_HINT"] ?? "") . " - dbg");        
         return $GLOBALS["OGHMA_HINT"];
+    } else 
+        return "";
+}
+
+function BuildRumorsContext($params) {
+    
+    if (isset($GLOBALS["rumorsText"]) && (!empty($GLOBALS["rumorsText"])) ) {
+        //error_log("oghma minai: ". ($GLOBALS["OGHMA_HINT"] ?? "") . " - dbg");        
+        return $GLOBALS["rumorsText"];
     } else 
         return "";
 }
@@ -158,9 +177,21 @@ function BuildPersonalityContext($params) {
     if (isset($GLOBALS['HERIKA_RELATIONSHIPS']) && (trim($GLOBALS['HERIKA_RELATIONSHIPS']) > "")) { // core_npc_master.relationships
         $herika_pers .= "\n\n<personality_relationships>\n## Relationships, social connections\n" . StrCleanBullets(trim($GLOBALS['HERIKA_RELATIONSHIPS'])) . "\n</personality_relationships>\n";
     }
+    // ------------------
+    //$GLOBALS["dynamicBiography"] - $middle_term_memory
+    if (isset($GLOBALS['middle_term_memory']) && (trim($GLOBALS['middle_term_memory']) > "")) { // core_npc_master.relationships
+        $herika_pers .= "\n\n<middle_term_memory>\n## Middle term memory\n" . (trim($GLOBALS['middle_term_memory'])) . "\n</middle_term_memory>\n";
+    }
+    
+    // ------------------
+    if (isset($GLOBALS['HERIKA_SEX_PERSONALITY']) && (trim($GLOBALS['HERIKA_SEX_PERSONALITY']) > "")) { // addXPersonality
+        $herika_pers .= "\n\n<personality_sexual_behavior>\n" . trim($GLOBALS['HERIKA_SEX_PERSONALITY']) . "\n</personality_sexual_behavior>\n";
+    }
+    // ------------------
     if (isset($GLOBALS["PROFILE_PROMPT"]) && (trim($GLOBALS['PROFILE_PROMPT']) > "")) { // core_profiles.prompt
         $herika_pers .= "\n\n<personality_group_details>\n## Group related details\n" . trim($GLOBALS["PROFILE_PROMPT"]) . "\n</personality_group_details>\n";
     }
+    
     
     if (empty($herika_pers)) {
         return "";
@@ -185,7 +216,7 @@ function BuildCombatContext($params) {
         $ret .= "{$target} is currently engaged in battle!\n";
         
         // Add combat allies if any
-        $allies = GetActorValue($target, "combatAllies");
+        $allies = GetActorValue($target, "combatAllies", true);
         if (!empty($allies)) {
             $allies = explode('~', $allies);
             // Remove target and narrator from allies list (case insensitive)
@@ -202,7 +233,7 @@ function BuildCombatContext($params) {
         }
         
         // Add combat targets if any
-        $targets = GetActorValue($target, "combatTargets");
+        $targets = GetActorValue($target, "combatTargets", true);
         if (!empty($targets)) {
             $targets = explode('~', $targets);
             // Remove narrator from targets list (case insensitive)
@@ -266,99 +297,181 @@ function BuildInteractionContext($params) {
  */
 function BuildPlayerAchievementsContext($playername) {
     $s_res = "";
-    
-    if (strlen(trim($playername)) > 0) { 
+    $b_titles = boolval($GLOBALS['minai_context']['player_titles'] ?? false);
+    if ($b_titles && (strlen(trim($playername)) > 0)) { 
         
+        //--- member of -----------------------------------------------
+        $s_fac = "";
         // The Circle
         $bx = IsInFaction($playername, "The Circle");
         if ($bx) 
-            $s_res .= "- member of the inner circle of The Companions, Lycanthropy is mandatory condition for membership\n";
+            $s_fac .= "- member of the inner circle of The Companions, Lycanthropy is mandatory condition for membership\n";
         else {
             // The Companions
             if (IsInFaction($playername, "The Companions"))
-                $s_res .= "- member of The Companions\n";
+                $s_fac .= "- member of The Companions\n";
         }
         // Nightingales
         $bx = IsInFaction($playername, "Nightingales");
         if ($bx) 
-            $s_res .= "- member of the Nightingale Trinity (higher echelon of the Thieves Guild, dedicated to the service of Nocturnal)\n";
+            $s_fac .= "- member of the Nightingale Trinity (higher echelon of the Thieves Guild, dedicated to the service of Nocturnal)\n";
         else {
             //Thieves' Guild
             if (IsInFaction($playername, "Thieves' Guild"))
-                $s_res .= "- skilled thief, member of Thieves' Guild\n";
+                $s_fac .= "- skilled thief, member of Thieves' Guild\n";
         }
         
         // College of Winterhold - Arch-Mage, also known as Archmagus or Archmagister, the leader of the Mages Guild known as College of Winterhold. 
         $bx = IsInFaction($playername, "College of Winterhold Arch-Mage Faction");
         if ($bx) 
-            $s_res .= "- Arch-Mage, the leader of the Mages Guild known as College of Winterhold\n";
+            $s_fac .= "- Arch-Mage, the leader of the Mages Guild known as College of Winterhold\n";
         else {
             if (IsInFaction($playername, "College of Winterhold"))
-                $s_res .= "- mage, member of College of Winterhold\n";
+                $s_fac .= "- mage, member of College of Winterhold\n";
         }
         
         // Greybeards
         if (IsInFaction($playername, "Greybeards"))
-            $s_res .= "- recognized as The Dragonborn, member of Greybeards\n";
+            $s_fac .= "- recognized as The Dragonborn, member of Greybeards\n";
 
         // Bards College
         if (IsInFaction($playername, "Bards College"))
-            $s_res .= "- presumed (debatable) skilled bard, member of Bards College\n";
+            $s_fac .= "- presumed (debatable) skilled bard, member of Bards College\n";
 
         // Blood-Kin of the Orcs
         if (IsInFaction($playername, "Blood-Kin of the Orcs"))
-            $s_res .= "- Blood-Kin of the Orcs, unlimited access to orc settlements\n";
+            $s_fac .= "- Blood-Kin of the Orcs, unlimited access to orc settlements\n";
 
         // The Dawnguard
         if (IsInFaction($playername, "The Dawnguard"))
-            $s_res .= "- vampire hunter, member of The Dawnguard\n";
+            $s_fac .= "- vampire hunter, member of The Dawnguard\n";
 
         // Thirsk Hall Riekling Tribe
         if (IsInFaction($playername, "Thirsk Hall Riekling Tribe"))
-            $s_res .= "- chief of Thirsk Hall Riekling Tribe\n";
+            $s_fac .= "- chief of Thirsk Hall Riekling Tribe\n";
 
         // Dark Brotherhood
         if (IsInFaction($playername, "Dark Brotherhood"))
-            $s_res .= "- professional assassin, member of the Dark Brotherhood\n";
+            $s_fac .= "- professional assassin, member of the Dark Brotherhood\n";
 
         // Tribunal Temple
         if (IsInFaction($playername, "Tribunal Temple"))
-            $s_res .= "- member of Tribunal Temple (heretical Dunmeri faction devoted to worship of the Tribunal, the former living gods Almalexia, Sotha Sil, and Vivec)\n";
+            $s_fac .= "- member of Tribunal Temple (heretical Dunmeri faction devoted to worship of the Tribunal, the former living gods Almalexia, Sotha Sil, and Vivec)\n";
 
         // Imperial Legion
         if (IsInFaction($playername, "Imperial Legion"))
-            $s_res .= "- member of Imperial Legion\n";
+            $s_fac .= "- member of Imperial Legion\n";
         
         // Stormcloaks
         if (IsInFaction($playername, "Stormcloaks"))
-            $s_res .= "- member of Stormcloaks\n";
+            $s_fac .= "- member of Stormcloaks\n";
         
         // Volkihar Vampire Clan
         if (IsInFaction($playername, "Volkihar Vampire Clan"))
-            $s_res .= "- vampire, member of Volkihar Vampire Clan\n";
+            $s_fac .= "- vampire, member of Volkihar Vampire Clan\n";
         
         // Blades
         if (IsInFaction($playername, "Blades"))
-            $s_res .= "- member of the Blades\n";
+            $s_fac .= "- member of the Blades\n";
 
         // Vigilant of Stendarr For Player
         if (IsInFaction($playername, "Vigilant of Stendarr For Player"))
-            $s_res .= "- member of Vigilant of Stendarr\n";
+            $s_fac .= "- member of Vigilant of Stendarr\n";
 
         // Riften Fishery Faction
         if (IsInFaction($playername, "Riften Fishery Faction"))
-            $s_res .= "- exceptional fisherman, member of Riften Fishery Guild\n";
+            $s_fac .= "- exceptional fisherman, member of Riften Fishery Guild\n";
 
         // Coven of Namira
         if (IsInFaction($playername, "Coven of Namira"))
-            $s_res .= "- cannibal, member of Coven of Namira\n";
+            $s_fac .= "- cannibal, member of Coven of Namira\n";
 
-        // 
-        //if (IsInFaction($playername, ""))
-        //    $s_res .= "- member of \n";
+        if (strlen($s_fac) > 0) {
+            $s_fac = "\n### {$playername}'s affiliations: \n" . $s_fac . "\n";
+        }
 
-        if (strlen($s_res) > 0) {
-            $s_res = "\n### {$playername}'s affiliations: \n" . $s_res;
+        //--- champion of ---------------------------------------------
+        $s_champ = "";
+        $s_keywords = trim(GetActorValue($playername, "champion_achievement", true));
+        if (!empty($s_keywords)) {
+            $keywords = explode("~", $s_keywords);
+            $keywords = array_filter($keywords); // Remove empty entries
+            $nk = count($keywords);
+            if ($nk > 0) {
+                for ($k = 0; $k < $nk; $k++) {
+                    $s_k = $keywords[$k];
+                    $s_champ .= "- Champion of {$s_k}\n";
+                }                
+            }
+            if (strlen($s_champ) > 0) 
+                $s_champ = "\n### {$playername}'s daedric deeds: \n" . $s_champ . "\n";
+        }
+        
+        //--- agent of ------------------------------------------------
+        $s_agent = ""; 
+        $s_keywords = trim(GetActorValue($playername, "agent_achievement", true));
+        if (!empty($s_keywords)) {
+            $keywords = explode("~", $s_keywords);
+            $keywords = array_filter($keywords); // Remove empty entries
+            $nk = count($keywords);
+            if ($nk > 0) {
+                for ($k = 0; $k < $nk; $k++) {
+                    $s_k = $keywords[$k];
+                    $s_agent .= "- Agent of {$s_k}\n";
+                }                
+            }
+            if (strlen($s_agent) > 0) 
+                $s_agent = "\n### {$playername}'s divine blessings: \n" . $s_agent . "\n";
+        }
+        
+        //--- thane of ------------------------------------------------
+        $s_thane = "";
+        // Get thane keywords and format them
+        $s_keywords = trim(GetActorValue($playername, "thane_achievement", true));
+        if (!empty($s_keywords)) {
+            $keywords = explode("~", $s_keywords);
+            $keywords = array_filter($keywords); // Remove empty entries
+            $nk = count($keywords);
+            if ($nk > 0) {
+                for ($k = 0; $k < $nk; $k++) {
+                    $s_hold = $keywords[$k];
+                    $sl_hold = strtolower($s_hold);
+                    if ($sl_hold == 'whiterun')  //Whiterun and Lydia was assigned as his housecarl
+                        $s_thane .= "- Thane of {$s_hold} with Lydia as housecarl.\n";
+                    elseif (($sl_hold == 'rift') ||($sl_hold == 'the rift'))  
+                        $s_thane .= "- Thane of {$s_hold} with Iona as housecarl.\n";
+                    elseif ($sl_hold == 'hjaalmarch')  
+                        $s_thane .= "- Thane of {$s_hold} with Valdimar as housecarl.\n"; //Thane of Hjaalmarch	Valdimar
+                    elseif ($sl_hold == 'eastmarch')  
+                        $s_thane .= "- Thane of {$s_hold} with Calder as housecarl.\n"; // Thane of Eastmarch	- Calder
+                    elseif ($sl_hold == 'falkreath')  
+                        $s_thane .= "- Thane of {$s_hold} with Rayya as housecarl.\n"; // Thane of Falkreath	- Rayya
+                    elseif ($sl_hold == 'haafingar')  
+                        $s_thane .= "- Thane of {$s_hold} with Jordis the Sword-Maiden as housecarl.\n"; // Thane of Haafingar	- Jordis the Sword-Maiden
+                    elseif (($sl_hold == 'pale') || ($sl_hold == 'the pale'))  
+                        $s_thane .= "- Thane of {$s_hold} with Gregor as housecarl.\n"; // Thane of the Pale - Gregor
+                    elseif (($sl_hold == 'reach') || ($sl_hold == 'the reach'))  
+                        $s_thane .= "- Thane of {$s_hold} with Argis the Bulwark as housecarl.\n"; // Thane of the Reach - Argis the Bulwark
+                    else 
+                        $s_thane .= "- Thane of {$s_hold}\n";
+                }                
+            }
+            if (strlen($s_thane) > 0) 
+                $s_thane = "\n### {$playername}'s recognition and prestige: \n" . $s_thane . "\n";
+        }
+
+        //-------------------------------------------------------------
+        if (strlen($s_thane) > 0) {
+            $s_res .= "\n\n".$s_thane;
+        }
+        if (strlen($s_fac) > 0) {
+            $s_res .= $s_fac;
+        }
+        if (strlen($s_champ) > 0) {
+            $s_res .= $s_champ;
+        }
+        if (strlen($s_agent) > 0) {
+            $s_res .= $s_agent;
         }
     }
     //error_log("achievements: $s_res ");

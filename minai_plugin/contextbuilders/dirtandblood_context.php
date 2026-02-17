@@ -3,18 +3,21 @@
 class dnb {
     // includes is a common name so put it in a class to avoid name collisions
     static function includes($str, $longerStr) {
-        if(strpos($longerStr, strtolower($str)) !== false) return true;
+        if(stripos($longerStr, strtolower($str)) !== false) return true;
     }
+    
     static function rollUpAList($someArray, $hasHave = false) {
         $count = count($someArray);
         if($count>1) {
             // prepend last element with "and" for "and so-and-so" in list
             $someArray[count($someArray) - 1] = "and " .  $someArray[count($someArray) - 1];
         }
+        
         $str = "";
         if(count($someArray)>1) {
             $str = implode(", ", $someArray); 
         } else $str = $someArray[0];
+        
         if($hasHave) {
             if($count>1) {
                 $str .= " have ";
@@ -33,47 +36,47 @@ class dnb {
     
     // Helper function to get descriptions for different dirt and blood states
     static function getStateDescription($state, $hasHave = false) {
-        switch($state) {
-            case "Clean":
+        switch(strtolower($state)) {
+            case "clean":
                 return "immaculately clean and well-groomed, with not a speck of dirt or grime to be seen. Their skin glows with health, and their attire has been meticulously maintained.";
-            case "Dirt1":
+            case "dirt1":
                 return "lightly dusted with dirt on their clothes and skin, the kind that comes from a normal day of travel or work in Skyrim. Nothing unusual or particularly noticeable by local standards.";
-            case "Dirt2":
+            case "dirt2":
                 return "visibly dirty with grime accumulated across their clothing and exposed skin. Their appearance suggests it's been several days since they've had a proper bath or cleaned their garments.";
-            case "Dirt3":
+            case "dirt3":
                 return "heavily soiled with thick layers of dirt and grime covering much of their body and clothing. A noticeable earthy smell emanates from them, and their fingernails are blackened with embedded dirt.";
-            case "Dirt4":
+            case "dirt4":
                 return "absolutely caked in layers of thick, encrusted filth from head to toe. Their features are barely distinguishable beneath the grime, and they emit a powerful stench of rot, sweat, and decay that causes people nearby to wrinkle their noses in disgust.";
-            case "Blood1":
+            case "blood1":
                 return "marked with scattered bloodstains across their garments and skin - spatter marks and small patches that suggest recent violence or perhaps tending to wounds. Though noticeable, the blood is minimal and has begun to dry in places.";
-            case "Blood2":
+            case "blood2":
                 return "showing prominent large bloodstains spread across their clothing and armor. Dark crimson patches and streaks suggest they've been in a serious confrontation recently. The metallic scent of blood lingers around them.";
-            case "Blood3":
+            case "blood3":
                 return "quite bloody, with gore liberally splashed across their person. Their hands and forearms are particularly stained with half-dried blood, and numerous spatters mark their face and clothing. They look as though they've just walked away from intense combat.";
-            case "Blood4":
+            case "blood4":
                 return "covered in blood to a horrifying degree. They are drenched in crimson from head to toe, with blood soaking their clothing and armor, pooling in crevices, and still glistening wetly in places. Bloody footprints mark their path, and the overwhelming metallic smell of fresh gore surrounds them like an aura.";
-            case "Bathing":
+            case "bathing":
                 return "currently bathing, with water droplets cascading down their exposed skin as they cleanse themselves of accumulated grime and sweat.";
-            case "Professional":
+            case "professional":
                 return "carrying dirt that appears related to their profession. The specific pattern of staining and residue suggests the honorable grime of daily work rather than simple neglect.";
-            case "Bandit":
+            case "bandit":
                 return "showing a distinctive pattern of grime that resembles that of wilderness travelers or those who've recently fought with bandits. There's a particular mixture of forest debris, campfire smoke residue, and weathered stains that could come from extended time in bandit territory or possibly rough living in the wilds.";
-            case "Lavender":
+            case "lavender":
                 if ($hasHave) return "the soothing, delicate aroma of lavender wafting pleasantly through the air around them, suggesting a recent bath with fine scented soap.";
                 return "freshly bathed and impeccably clean. Their skin and clothing emit a soothing, delicate aroma of lavender that wafts pleasantly through the air around them.";
-            case "Blue":
+            case "blue":
                 if ($hasHave) return "a refreshing fragrance of blue mountain flowers emanating from their person. The sweet, slightly crisp scent suggests a recent thorough bathing with fine-quality soap.";
                 return "exceptionally clean, with a refreshing fragrance of blue mountain flowers emanating from their person. The sweet, slightly crisp scent suggests a recent thorough bathing with fine-quality soap.";
-            case "Red":
+            case "red":
                 if ($hasHave) return "the warm, comforting scent of red mountain flowers clinging to their skin and clothes. The pleasantly floral aroma is unmistakable to those familiar with fine soaps.";
                 return "evidence of recent and thorough bathing, with the warm, comforting scent of red mountain flowers clinging to their skin and clothes. The pleasantly floral aroma is unmistakable to those familiar with fine soaps.";
-            case "DragonsTongue":
+            case "dragonstongue":
                 if ($hasHave) return "the exotic and slightly spicy aroma of dragon's tongue flowers surrounding them. The distinctive scent speaks of luxury and attention to personal hygiene.";
                 return "immaculately clean, surrounded by the exotic and slightly spicy aroma of dragon's tongue flowers. The distinctive scent speaks of luxury and attention to personal hygiene.";
-            case "Purple":
+            case "purple":
                 if ($hasHave) return "the rich, enchanting fragrance of purple mountain flowers. The rare and sought-after scent indicates both wealth and fastidious grooming habits.";
                 return "pristine cleanliness, carrying with them the rich, enchanting fragrance of purple mountain flowers. The rare and sought-after scent indicates both wealth and fastidious grooming habits.";
-            case "Superior":
+            case "superior":
                 if ($hasHave) return "an intoxicating, complex bouquet of various mountain flowers surrounding them. The layered, sophisticated fragrance suggests use of the finest and most expensive bathing products available in Skyrim.";
                 return "perfect cleanliness, surrounded by an intoxicating, complex bouquet of various mountain flowers. The layered, sophisticated fragrance suggests use of the finest and most expensive bathing products available in Skyrim.";
             default:
@@ -84,14 +87,18 @@ class dnb {
 
 // Get dirt and blood information for a single actor by name
 function GetSingleActorDirtAndBloodContext($actorName) {
+    $b_dirt = boolval($GLOBALS['minai_context']['dirt_and_blood'] ?? false);
+    if (!$b_dirt) {
+        return "";
+    }
     $utilities = new Utilities();
     if (!$utilities->IsModEnabled("DirtAndBlood")) {
         return "";
     }
     
-    if($actorName == "") return "";
+    if ($actorName == "") return "";
     
-    $listOfTags = $utilities->GetActorValue($actorName, "dirtAndBlood");
+    $listOfTags = $utilities->GetActorValue($actorName, "dirtAndBlood", true);
     if(empty($listOfTags)) return "";
     
     $verbiage = "";
@@ -134,6 +141,7 @@ function GetSingleActorDirtAndBloodContext($actorName) {
     if(empty($verbiage)) {
         return "";
     }
+    //error_log("[dirtandblood] {$verbiage} "); // debug
     return $verbiage;
 }
 
@@ -170,7 +178,7 @@ function GetDirtAndBloodContext($localActors) {
     foreach($actorList as $name) {
         $name = str_replace("(", "", $name);
         if($name == "") continue;
-        $listOfTags = $utilities->GetActorValue($name, "dirtAndBlood");
+        $listOfTags = $utilities->GetActorValue($name, "dirtAndBlood", true);
         
         // Check for primary states first
         $hasPrimaryState = dnb::includes("Clean", $listOfTags) || 

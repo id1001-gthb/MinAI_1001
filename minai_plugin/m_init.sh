@@ -15,9 +15,9 @@ echo "-- trimming apache log files " &>> /var/www/html/HerikaServer/log/clean.lo
 
 if [ -f /var/log/apache2/error.log ] ; then
   file_size=$(wc -l </var/log/apache2/error.log)
-  if [ $file_size -ge 2049 ]; then
+  if [ $file_size -ge 10241 ]; then
     echo "trimming /var/log/apache2/error.log size=$file_size " &>> /var/www/html/HerikaServer/log/clean.log
-    sed -i 1,$(($(wc -l < /var/log/apache2/error.log)-2048))d /var/log/apache2/error.log
+    sed -i 1,$(($(wc -l < /var/log/apache2/error.log)-10240))d /var/log/apache2/error.log
   else
     echo "not trimming /var/log/apache2/error.log size=$file_size " &>> /var/www/html/HerikaServer/log/clean.log
   fi
@@ -25,9 +25,9 @@ fi
 
 if [ -f /var/log/apache2/other_vhosts_access.log ] ; then
 	file_size=$(wc -l </var/log/apache2/other_vhosts_access.log)
-	if [ $file_size -ge 1025 ]; then
+	if [ $file_size -ge 10250 ]; then
 		echo "trimming /var/log/apache2/other_vhosts_access.log size=$file_size " &>> /var/www/html/HerikaServer/log/clean.log
-		sed -i 1,$(($(wc -l < /var/log/apache2/other_vhosts_access.log)-1024))d /var/log/apache2/other_vhosts_access.log
+		sed -i 1,$(($(wc -l < /var/log/apache2/other_vhosts_access.log)-10240))d /var/log/apache2/other_vhosts_access.log
 	else
 		echo "not trimming /var/log/apache2/other_vhosts_access.log size=$file_size " &>> /var/www/html/HerikaServer/log/clean.log
 	fi
@@ -35,9 +35,9 @@ fi
 
 if [ -f /var/log/apache2/access.log ] ; then
 	file_size=$(wc -l </var/log/apache2/access.log)
-	if [ $file_size -ge 1025 ]; then
+	if [ $file_size -ge 10250 ]; then
 		echo "trimming /var/log/apache2/access.log size=$file_size " &>> /var/www/html/HerikaServer/log/clean.log
-		sed -i 1,$(($(wc -l < /var/log/apache2/access.log)-1024))d /var/log/apache2/access.log
+		sed -i 1,$(($(wc -l < /var/log/apache2/access.log)-10240))d /var/log/apache2/access.log
 	else
 		echo "not trimming /var/log/apache2/access.log size=$file_size " &>> /var/www/html/HerikaServer/log/clean.log
 	fi
@@ -53,9 +53,9 @@ for lfile in *.log; do
         #is a regular file, not symlink
         file_size=$(wc -l <"$lfile")
         echo "- file: "$lfile" size=$file_size " &>> /var/www/html/HerikaServer/log/clean.log
-        if [ $file_size -ge 1025 ]; then
+        if [ $file_size -ge 2049 ]; then
             echo "trimming "$lfile" size=$file_size " &>> /var/www/html/HerikaServer/log/clean.log
-            if tail -n 1024 "$lfile"> "$lfile.new"
+            if tail -n 2048 "$lfile"> "$lfile.new"
             then
                 mv -v "$lfile.new" "$lfile" &>> /var/www/html/HerikaServer/log/clean.log
             fi

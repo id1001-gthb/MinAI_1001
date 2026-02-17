@@ -32,7 +32,7 @@ function IsMaster($name) {
 
 function GetMindInfluenceState($name) {
     $states = [];
-
+    
     if (IsEnabled($name, "isDrunk")) {
         $states[] = "drunk";
     }

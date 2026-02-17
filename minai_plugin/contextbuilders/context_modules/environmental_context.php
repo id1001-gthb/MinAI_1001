@@ -14,6 +14,7 @@ require_once(__DIR__ . "/../../contextbuilders/dirtandblood_context.php");
 require_once(__DIR__ . "/../../contextbuilders/exposure_context.php");
 require_once("/var/www/html/HerikaServer/ext/minai_plugin/location_context_details.php");
 require_once("/var/www/html/HerikaServer/lib/utils_game_timestamp.php");
+require_once("/var/www/html/HerikaServer/ext/minai_plugin/contextbuilders/context_modules/character_context_size_dict.php");
 
 /**
  * Helper function to validate and sanitize parameters for context builders
@@ -271,6 +272,7 @@ function BuildMoonPhaseContext($params) {
  * @return string Description of the location type
  */
 function GetLocationKeywordDescription($keyword) {
+
     $descriptions = [
         // Settlement Types
         'city' => 'a major urban center',
@@ -285,7 +287,7 @@ function GetLocationKeywordDescription($keyword) {
         'tower' => 'a tall defensive structure',
         'barracks' => 'military housing quarters',
         'palace' => 'a grand residence of nobility',
-        
+       
         // Religious
         'temple' => 'a place of worship',
         'temple_of_kynareth' => 'a temple dedicated to Kynareth',
@@ -360,12 +362,17 @@ function GetLocationKeywordDescription($keyword) {
         // Law Enforcement
         'prison' => 'a prison facility',
         'jail' => 'a local jail',
+
+        // cleared status
+        'location_clearable' => 'a location with possible enemy presence that needs to be cleared',
+        'location_iscleared' => 'now has <safe_location>safe location status where most or all enemies have been annihilated</safe_location>', 
+        'location_notcleared' => 'classified as a <unsafe_location>dangerous location where you have to be prepared for combat, enemies are nearby</unsafe_location>',
         
         // Navigation
         'lighthouse' => 'a coastal navigation aid'
     ];
     
-    return isset($descriptions[$keyword]) ? $descriptions[$keyword] : 'a location';
+    return isset($descriptions[$keyword]) ? $descriptions[$keyword] : 'location about which not much is known';
 }
 
 /**
@@ -380,13 +387,13 @@ function BuildLocationContext($params) {
     $utilities = new Utilities();
     
     $context = "";
-    
+    $b_cache = (rand(0, 3) == 0);
     // Get hold information
-    $currentHold = ucwords(GetActorValue($character, "currentHold"));
+    $currentHold = ucwords(GetActorValue($character, "currentHold", true, $b_cache));
     $hasHold = (!empty($currentHold));
 
     // Get location information - prefer location over cell
-    $currentLocation = ucwords(GetActorValue($character, "currentLocation"));
+    $currentLocation = ucwords(GetActorValue($character, "currentLocation", true, $b_cache));
     $hasLocation = (!empty($currentLocation));
 
     if (!$hasLocation) {
@@ -548,11 +555,12 @@ function BuildNearbyCharactersContext($params) {
         return trim(trim($name, '()'));
     }, $characters);
 
+    $is_nsfw = !($GLOBALS['disable_nsfw'] ?? true);
     // If we have characters after cleaning, create the formatted list
     if (count($characters) > 0) {
         // Define attributes to fetch in batch - use lowercase for array keys
-        $attributes = ['race', 'gender', 'faction', 'sitstate', 'sleepstate', 'dirtandblood', 'scene'];
-        $flags = ['IsSneaking', 'IsSwimming', 'IsOnMount', 'inCombat', 'isEncumbered', 'hostiletoplayer','isNaked', 'IsBleedingOut'];
+        $attributes = ['race', 'gender', 'faction', 'sitstate', 'sleepstate', 'dirtandblood', 'scene','inCombatState'];
+        $flags = ['IsSneaking', 'IsSwimming', 'IsOnMount', 'inCombat', 'isEncumbered', 'hostiletoplayer', 'isNaked', 'IsBleedingOut'];
         
         // Correctly call the batch functions from global scope
         $actorValues = \BatchGetActorValues($characters, $attributes);
@@ -564,13 +572,18 @@ function BuildNearbyCharactersContext($params) {
             $charKey = strtolower($character);
             $line = $character;
             $s_race = "";
-            // Get race if available
-            if (isset($actorValues[$charKey]['race']) && !empty($actorValues[$charKey]['race'])) {
-                $s_race = $actorValues[$charKey]['race'];
-                $s_gender = $actorValues[$charKey]['gender']; //GetGender($character);
-                $s_child =  (IsChildActor($character)) ? " child" : ""; 
+            $s_gender = $actorValues[$charKey]['gender'] ?? '';
+            $b_scene = IsInScene($character);
+            $b_naked = $actorFlags[$charKey]['isnaked'] ?? false;
+            $s_race = $actorValues[$charKey]['race'] ?? '';
                 
+            // Get race if available
+            if (strlen($s_race) > 0) {
+                //$s_gender = $actorValues[$charKey]['gender']; //GetGender($character);
+                $s_child =  (IsChildActor($character)) ? " child" : ""; 
                 $line .= " ({$s_race} {$s_gender}{$s_child})";
+            } else {
+                $line .= " ({$s_gender})";
             }
             
             // Add faction info if available
@@ -596,9 +609,10 @@ function BuildNearbyCharactersContext($params) {
             if ($b_dirt && isset($actorValues[$charKey]['dirtandblood']) && (!empty($actorValues[$charKey]['dirtandblood']))) {
                 $hygiene = $actorValues[$charKey]['dirtandblood'];
                 
-                if (stripos($hygiene, "Clean") !== false) {
-                    $line .= " - clean";
-                } elseif (stripos($hygiene, "Dirt4") !== false) {
+                //if (stripos($hygiene, "Clean") !== false) {
+                    //$line .= " - clean";
+                //} else
+                if (stripos($hygiene, "Dirt4") !== false) {
                     $line .= " - filthy";
                 } elseif (stripos($hygiene, "Dirt3") !== false) {
                     $line .= " - very dirty";
@@ -634,16 +648,38 @@ function BuildNearbyCharactersContext($params) {
                 }
             }
 
-            if (isset($actorFlags[$charKey]['isnaked']) && $actorFlags[$charKey]['isnaked']) {
-                if (!IsCreature($character))
+            if ($b_naked || $b_scene) {
+                if (!IsCreature($character)) {
                     $line .= " - naked";
+                }
+                if ($is_nsfw) {
+                    if ($s_gender == 'male') {
+                        $line .= GetPenisSizeShort($character);
+                        $line .= GetPenisSizeDetails($character, $s_race, true);
+                        
+                        $arousalThreshold = intval(GetActorValue($GLOBALS['PLAYER_NAME'], "arousalForSex")); // arousalForSex arousalForHarass
+                        $arousal = intval(GetActorValue($character, "arousal"));
+                        if ($b_scene) {
+                            $line.= ", in erection";
+                        } elseif (($arousal > 80) && ($arousal >= $arousalThreshold)) {
+                            $line.= ", in erection";
+                        } elseif (($arousal < 15) && ($arousal < $arousalThreshold)) {
+                            $line.= ", flaccid now"; 
+                        }
+                    }
+                }
             }
 
             // ---------------------- 
 
-            if (IsInScene($character)) { //IsInScene($character) 
+            if ($b_scene) { //IsInScene($character) 
                 //error_log(" in scene: $character - dbg ");
-                $line .= " - having sex now"; 
+                $line .= " - having sex now";
+                if ($s_gender == 'female') {
+                    $s_fertile = GetFertilityContextShort($character, false, true);
+                    if (strlen($s_fertile) > 0)
+                        $line .= " - " . $s_fertile; 
+                }
             } else {
 
                 // Movement and combat states
@@ -662,6 +698,10 @@ function BuildNearbyCharactersContext($params) {
                 if (isset($actorFlags[$charKey]['isincombat']) && $actorFlags[$charKey]['isincombat']) {
                     $line .= " - in combat";
                 }
+                //inCombatState
+                if (isset($actorValues[$charKey]['inCombatState']) && !empty($actorValues[$charKey]['inCombatState']) && intval($actorValues[$charKey]['inCombatState']) == 2) {
+                    $line .= " - searching for enemies";
+                }
 
                 // Add character state
                 if (isset($actorValues[$charKey]['sitstate']) && !empty($actorValues[$charKey]['sitstate']) && intval($actorValues[$charKey]['sitstate']) == 3) {
@@ -672,6 +712,12 @@ function BuildNearbyCharactersContext($params) {
                 if (isset($actorValues[$charKey]['sleepstate']) && !empty($actorValues[$charKey]['sleepstate']) && $actorValues[$charKey]['sleepstate'] != "awake") {
                     $line .= " - " . $actorValues[$charKey]['sleepstate'];
                 }
+                
+            }
+            if ($s_gender == 'female') {
+                $s_fertile = GetFertilityContextShort($character, true, false);
+                if (strlen($s_fertile) > 0)
+                $line .= " - " . $s_fertile; 
             }
             
             $contextLines[] = $line;

@@ -20,7 +20,7 @@ $GLOBALS["herika_gender"] = GetGender($GLOBALS["HERIKA_NAME"]); //IsFemale($GLOB
 $GLOBALS["herika_pronouns"] = GetActorPronouns($GLOBALS["HERIKA_NAME"]);
 
 // Cache nearby actors
-$GLOBALS["nearby"] = explode(",", GetActorValue("PLAYER", "nearbyActors"));
+$GLOBALS["nearby"] = explode(",", GetActorValue("PLAYER", "nearbyActors", true));
 
 // Cache NSFW settings
 if (IsChildActor($GLOBALS['HERIKA_NAME']) || IsChildActor($GLOBALS["target"])) {

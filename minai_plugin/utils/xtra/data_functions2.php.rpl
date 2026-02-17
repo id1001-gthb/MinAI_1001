@@ -1,0 +1,7 @@
+    AND type<>'narrator_welcome' 
+    OR type ILIKE 'info\_%' 
+    OR type ILIKE 'ext\_%' 
+    ".(($b_actor) ? " AND (people ILIKE '%|$actorEscaped%')" : " "). 
+    " {$removeBooks} {$sqlfilter} ". 
+    //((false)?" and gamets>".($currentGameTs-(60*60*60*60)):""). 
+    " ORDER BY gamets desc, ts desc, rowid desc LIMIT {$nRecordsLimit} OFFSET 0";  

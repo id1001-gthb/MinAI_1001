@@ -5,21 +5,32 @@
 //    return;
 //}
 
-require_once("config.php");
+require_once(__DIR__."/config.php");
+require_once(__DIR__."/globals.php");
 
 // add emotions
 if ($GLOBALS['use_emotions_expression']) {
+    if (!array_key_exists("emotion", $GLOBALS["responseTemplate"])) {
+        $GLOBALS["responseTemplate"]["emotion"] = 
+		"calm|surprised|aroused|desire|love|happy|amusement|gratitude|proud|anxious|fearful|panic|grieving|envious|jealous|sad|disappointed|ashamed|angry|offended|disgusted|sarcastic";
+    }
+    if (!array_key_exists("emotion_intensity", $GLOBALS["responseTemplate"])) {
+        $GLOBALS["responseTemplate"]["emotion_intensity"] = "low|moderate|strong";
+    }
+    /*    
     $GLOBALS["responseTemplate"] = array_merge($GLOBALS["responseTemplate"], [
         //"emotion" => "calm|arousal|desire|love|happy|gratitude|pride|fear|apprehension|panic|anxiety|grief|envy|jealousy|disappointment|shame|embarrassment|anger|rage|resentment|disgust",
         "emotion" => "calm|surprised|aroused|desire|love|happy|amusement|gratitude|proud|anxious|fearful|panic|grieving|envious|jealous|sad|disappointed|ashamed|angry|offended|disgusted|sarcastic", 
-        "emotion intensity" => "low|moderate|strong"
-    ]);
+        "emotion_intensity" => "low|moderate|strong"
+    ]); 
     //inworld tts: [happy], [sad], [angry], [surprised], [fearful], [disgusted]
-    //inworld tts refusal: aroused anxious nervous worried embarrassed resentful
-
+    */
+    
     $crt_moods = trim($GLOBALS["responseTemplate"]["mood"] ?? ""); 
     if ($crt_moods == "")
-        $crt_moods = "default|neutral|calm|assisting|assertive|playful|delighted|sexy|amused|kindly|lovely|seductive|smug|sassy|sarcastic|sardonic|smirking|irritated|teasing|mocking|bored|curious|confident|courageous|content|angry|belligerent|anxious|fearful|sad|gloomy|drunk|high|sober";
+        $crt_moods = "default|neutral|calm|assisting|assertive|playful|delighted|sexy|amused|kindly|lovely|seductive|smug|sassy|sarcastic|sardonic|smirking".
+                     "|irritated|teasing|mocking|bored|curious|confident|courageous|content|angry|belligerent|anxious|fearful|sad|gloomy|drunk|high|sober".
+                     "|desperate|distressed|pleading";
     else {
         if (strpos($crt_moods, "default") === false) 
            $crt_moods .= "|default";
@@ -89,17 +100,53 @@ if ($GLOBALS['use_emotions_expression']) {
            $crt_moods .= "|high";
         if (strpos($crt_moods, "sober") === false) 
            $crt_moods .= "|sober";
+        if (strpos($crt_moods, "desperate") === false) 
+           $crt_moods .= "|desperate";
+        if (strpos($crt_moods, "distressed") === false) 
+           $crt_moods .= "|distressed";
+        if (strpos($crt_moods, "pleading") === false) 
+           $crt_moods .= "|pleading";
     }
+    
+  /*
+  $EMOTEMOODS="sassy,"
+    . "assertive,"
+    . "sexy,"
+    . "smug,"
+    . "kindly,"
+    . "lovely,"
+    . "seductive,"
+    . "sarcastic,"
+    . "sardonic,"
+    . "smirking,"
+    . "amused,"
+    . "default,"
+    . "assisting,"
+    . "irritated,"
+    . "playful,"
+    . "neutral,"
+    . "teasing,"
+    . "mocking"
+    
+    . "desperate"
+    . "distressed"
+    . "pleading"
+    . "sad"; //List of moods passed to LLM (comma separated). Triggers animations if enabled.
+
+  */  
    
     $GLOBALS["responseTemplate"]["mood"] = $crt_moods;
 }
 
-$GLOBALS["responseTemplate"]["message"] = "generated response, lines of dialogue in plain text without formatting";
-$GLOBALS["responseTemplate"]["target"] = "the name of the character or entity who is the target of the action|the name of the location that is the destination of the action";
-$GLOBALS["responseTemplate"] = array_merge($GLOBALS["responseTemplate"], [
-    "probability" => "number in 0.0 - 1.0 interval"
-]);
+$GLOBALS["responseTemplate"]["message"] = "{$GLOBALS["HERIKA_NAME"]}'s response as lines of dialogue in plain text without formatting";
+$GLOBALS["responseTemplate"]["target"] = "the Name of the character who is the target of the action or the Name of the destination location if the action is a movement action";
+$GLOBALS["responseTemplate"]["listener"] = "specify the Name of the character who {$GLOBALS["HERIKA_NAME"]} is directly talking to";
+$GLOBALS["responseTemplate"]["item"] = "Item Name when using GiveItemTo or PickupItem actions, Spell Name when using action CastSpell, amount of gold written as number with single quotes (like '50') when using action GiveGoldTo"; 
+//"item"=>"item name (REQUIRED when action is GiveItemTo or PickupItem or CastSpell - use exact item name from inventory or spell name from spells) OR amount of gold (REQUIRED when action is GiveGoldTo - number as string, e.g. '50')"
 
+if (!array_key_exists("probability", $GLOBALS["responseTemplate"])) {
+    $GLOBALS["responseTemplate"]["probability"] = "number in 0.0 - 1.0 interval";
+}
 
 /*
 if (IsEnabled($GLOBALS["PLAYER_NAME"], "isSinging")) {
@@ -145,4 +192,8 @@ if (isset($GLOBALS["self_narrator"]) && $GLOBALS["self_narrator"] && $GLOBALS["H
         $GLOBALS["responseTemplate"]["response_tone_neutral"] = "Value from 0-1";
     }
 }
+
+$GLOBALS["ENFORCE_ACTIONS_PROMPT"] = true;
+$GLOBALS["PATCH_PROMPT_ENFORCE_ACTIONS"] = true;
+
 

@@ -7,7 +7,7 @@ require_once(__DIR__ . "/utils/format_util.php");
 require_once(__DIR__ . "/utils/prompt_slop_cleanup.php");
 
 function convertRelationshipStatus($targetActor) {
-    $relationshipRank = GetActorValue($targetActor, "relationshipRank");
+    $relationshipRank = intval(GetActorValue($targetActor, "relationshipRank"));
     if ($relationshipRank == 0) {
         return "a stranger";
     } else if ($relationshipRank < 1) {
@@ -279,7 +279,17 @@ Do not mention the probability and how you decided to choose the answer.
         $contextDataHistoric = GetRecentContext("", ($contextMessages * 2));
         
         // Get info about location and NPCs
-        $contextDataWorld = DataLastInfoFor("", -5);
+        $contextDataWorld = DataLastInfoFor("", -7) ?? [];
+        /*
+            $contextDataWorld = DataLastInfoFor("", -2, $addNPCDescriptions = false, $excludeBusy = true);
+            $contextDataFull  = array_merge($contextDataWorld??[], $contextDataHistoric??[]);
+            $historyData      = "";
+
+        // Ensure contextDataWorld is an array
+        if (!is_array($contextDataWorld)) {
+            $contextDataWorld = [];
+        }
+        */
         
         // Get lists of valid names and locations
         $nearbyActors = array_filter(array_map('trim', explode('|', DataBeingsInRange())));

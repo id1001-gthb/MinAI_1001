@@ -1,37 +1,57 @@
 <?php
 // not to be included explicitly, must be included only via requireFilesRecursively()
+//error_log("-- preprocessing -- ");
 
 // Start metrics for this entry point
 require_once("utils/metrics_util.php");
+
+SaveOriginalHerikaName();
+
+if (isset($GLOBALS["TTS_FFMPEG_FILTERS"]["tempo"])) {
+	$s_tempo = $GLOBALS["TTS_FFMPEG_FILTERS"]["tempo"];  
+	error_log("TTS_FFMPEG_FILTERS {$s_tempo} - exec trace " .__FILE__." ".__LINE__); // debug
+
+	if (stripos($s_tempo,"atempo=0.") !== false ) {
+		$GLOBALS["TTS_FFMPEG_FILTERS"]["tempo"] = 'atempo=0.95'; 
+	} else {
+		if (stripos($s_tempo,"atempo=1.") !== false ) { //='atempo=1.45';
+			$GLOBALS["TTS_FFMPEG_FILTERS"]["tempo"] = 'atempo=1.05'; 
+		}
+	}
+}
 
 /*
 // min old version
 $fast_commands = ["addnpc","_quest","setconf","request","_speech","infoloc","infonpc","infonpc_close",
     "infoaction","status_msg","delete_event","itemfound","_questdata","_uquest","location","_questreset"];
-
-// chim new version
-$fast_commands = ["addnpc","updateprofile","diary","_quest","setconf","request","_speech","infoloc","infonpc","infonpc_close",
-    "infoaction","status_msg","delete_event","itemfound","_questdata","_uquest","location","_questreset","chat","bleedout","waitstart","waitstop",
-    "util_location_name","spellcast","npcspellcast","updateprofiles_batch_async","core_profile_assign","switchrace","combatbark",
-    "util_location_npc","enable_bg","region"];
-    
 */
 
 // chim new version
+
+//$fast_commands = ["addnpc","updateprofile","diary","_quest","setconf","request","_speech","infoloc","infonpc","infonpc_close",
+//    "infoaction","status_msg","delete_event","itemfound","_questdata","_uquest","location","_questreset","chat","bleedout","waitstart","waitstop",
+//    "util_location_name","spellcast","npcspellcast","updateprofiles_batch_async","core_profile_assign","switchrace","combatbark",
+//    "util_location_npc","enable_bg","region","named_cell","snqe"];
+
 $fast_commands = ["addnpc","updateprofile","diary","_quest","setconf","request","_speech","infoloc","infonpc","infonpc_close",
     "infoaction","status_msg","delete_event","itemfound","_questdata","_uquest","location","_questreset","chat","bleedout","waitstart","waitstop",
-    "util_location_name","spellcast","npcspellcast","updateprofiles_batch_async","core_profile_assign","switchrace","combatbark",
-    "util_location_npc","enable_bg","region"];
+    "util_location_name","util_faction_name","spellcast","npcspellcast","updateprofiles_batch_async","core_profile_assign","switchrace","combatbark",
+    "util_location_npc","enable_bg","region","named_cell","snqe","named_cell_static"];
+
 
 if (isset($GLOBALS["external_fast_commands"])) {
     $fast_commands = array_merge($fast_commands, $GLOBALS["external_fast_commands"]);
 }
+
+// $GLOBALS["all_fast_commands"] = $fast_commands; // check if this is set
+
 
 // Check for exact matches against fast commands
 if (isset($GLOBALS["gameRequest"]) && in_array($GLOBALS["gameRequest"][0], $fast_commands)) {
     $GLOBALS["minai_skip_processing"] = true;
     //error_log("Skip fast-request: " . $GLOBALS["gameRequest"][0]); // debug
 } else {
+    $GLOBALS["minai_skip_processing"] = false;
     //error_log("Processing Non-Fast request: " . $GLOBALS["gameRequest"][0]); // debug
 }
 

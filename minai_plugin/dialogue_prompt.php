@@ -48,10 +48,10 @@ $b_rem_asterisk = $GLOBALS["REMOVE_ASTERISKS_FROM_OUTPUT"] ?? true;
 
 if ($b_rem_asterisk) {
     $GLOBALS["TEMPLATE_DIALOG_NARRATION"] = "- Always speak in first person. 
-- Your response must be fluent, conversational and authentic, without further explanations, descriptions or narration, without formal, robotic, or repetitive language.
-";
+- Your response must be fluent, conversational and authentic, without further explanations, descriptions or narration, without formal, robotic, or repetitive language. ";
     $GLOBALS["TEMPLATE_DIALOG_OUTPUT_FORMAT"] = "<output_formatting>
 - Use plain text without formatting, absolutely no markdown formatting, no heading, bold, italic or lists, asterisk sign is absolutely forbidden. 
+- Do not use em dash character.
 </output_formatting>";
 } else {
     $GLOBALS["TEMPLATE_DIALOG_NARRATION"] = "- Speak in first person for conversation, you could add a brief third person narrative or description if absolutely necessary to explain a situation or state of mind. 
@@ -97,12 +97,41 @@ $GLOBALS["TEMPLATE_DIALOG"]="\n<instruction>Write {$currentName}'s next dialogue
 {$td_fmt}
 {$td_vs}"; 
 
-
-//"- {$GLOBALS["HERIKA_NAME"]}'s next dialogue lines will use this format \"{$GLOBALS["HERIKA_NAME"]}: \". ";
+//--------------------------------------------------------
 
 if (@is_array($GLOBALS["TTS"]["AZURE"]["validMoods"]) &&  sizeof($GLOBALS["TTS"]["AZURE"]["validMoods"])>0) 
     if ($GLOBALS["TTSFUNCTION"]=="azure")
         $TEMPLATE_DIALOG.="(optional way of speaking from this list [" . implode(",", $GLOBALS["TTS"]["AZURE"]["validMoods"]) . "])";
+
+//--------------------------------------------------------
+
+if (!isset($GLOBALS['minai_context']['action_enforcement'])) {
+        $GLOBALS['minai_context']['action_enforcement'] = true;
+}
+
+$b_narrator = ($currentName === "The Narrator") || ($currentName === "Narrator");
+if ($b_narrator) {
+    $GLOBALS['minai_context']['action_enforcement'] = false;
+}
+
+if ($GLOBALS['minai_context']['action_enforcement']) {
+    //$b_act_prompt = ($GLOBALS["FUNCTIONS_ARE_ENABLED"] ?? false);
+    //if ($b_act_prompt) {
+        $GLOBALS["TEMPLATE_DIALOG"] .= "\n<actions_usage_instructions><important_rule>\n".
+            "Carefully evaluate whether the context is appropriate to use an action from the <available_actions_list>. ".
+            "If there is an action that aligns with your intentions and the context, do not hesitate to use it. \n".
+            "When an OoC instruction demands you to use an available action from <available_actions_list>, ". 
+            "it is important to perform this action immediately even if it does not fully align with the context and your intentions. ".
+            "\n</important_rule></actions_usage_instructions>"; 
+    //}
+
+    //error_log("FUNCTIONS_ARE_ENABLED=".($GLOBALS["FUNCTIONS_ARE_ENABLED"] ?'Y':'N')." TD=".$GLOBALS["TEMPLATE_DIALOG"].' /exec trace'); // debug
+    //error_log("PATCH_PROMPT_ENFORCE_ACTIONS=".($GLOBALS["PATCH_PROMPT_ENFORCE_ACTIONS"] ?'Y':'N')." PROMPT=".$GLOBALS["COMMAND_PROMPT_ENFORCE_ACTIONS"].' /exec trace'); // debug
+    //$GLOBALS["COMMAND_PROMPT_ENFORCE_ACTIONS"] = '';
+    //$COMMAND_PROMPT_ENFORCE_ACTIONS="If you want to initiate an ACTION, choose an ACTION that fits the context";
+    //USER MAY WANTS YOU TO ISSUE ACTION // get rid of this
+}
+
 
 $GLOBALS["TEMPLATE_DIALOG"] .= "\n{$rg1}\n";
 
@@ -110,12 +139,11 @@ $TEMPLATE_ACTION="";
 
 //--------------------------------------------------------
 
-if (($currentName === "The Narrator") || ($currentName === "Narrator")) {
+if ($b_narrator) {
     return;
 }
 
-//error_log("{$s_connector} TD:".$GLOBALS["TEMPLATE_DIALOG"].' /exec trace'); // debug
-
+//--------------------------------------------------------
 
 $scene = getScene($currentName);
 $jsonXPersonality = getXPersonality($currentName);
@@ -193,10 +221,12 @@ if (isset($scene)) {
             break;
         }
     }
-    $GLOBALS["TEMPLATE_DIALOG"] .= "- Emphasize the content of the most recent #SEX_SCENARIO described in <SEX_SCENARIO> tag in the dialogue history while reacting to the latest dialogue and events enumerated in <DIALOGUE_HISTORY_and_RECENT_EVENTS> tag, including any sexual acts, positions, or restraints. 
-- Speak in first person. 
-- Your response must be fluent, conversational and authentic, without formal, robotic, or repetitive language.
-- {$currentName} is a product of a consciousness with subjective experiences and emotions. 
+    
+    $GLOBALS["TEMPLATE_DIALOG"] .= "- Speak in first person. 
+- Emphasize the content of the most recent #SEX_SCENARIO described in <SEX_SCENARIO> tag in the dialogue history from <DIALOGUE_HISTORY_and_RECENT_EVENTS> tag. 
+- If the most recent dialogue line in dialogue history is directly addressed to you, respond to the interlocutor. 
+- React to the latest dialogue and events enumerated in <DIALOGUE_HISTORY_and_RECENT_EVENTS> tag, including any sexual acts, positions, or restraints as {$currentName} would do as a product of a consciousness with subjective experiences and emotions. 
+- Your response must be fluent, conversational and authentic, without formal, robotic, or repetitive language. 
 - Think and respond as {$currentName} would, according to {$pronouns["possessive"]} quirks, beliefs, biases, and reasoning.
 - Review <DIALOGUE_HISTORY_and_RECENT_EVENTS> to focus on conversation topic and to avoid repeating sentences and phraseology from previous dialog lines.  
 - Be original, creative, knowledgeable, use your own thoughts. 
@@ -204,5 +234,9 @@ if (isset($scene)) {
 {$td_fmt} 
 {$td_vs} 
 {$rg1} ";
-}
+} // endif scene
+
+//error_log("-- dialogue_prompt -- ");
+
+//error_log("{$s_connector} TD:".$GLOBALS["TEMPLATE_DIALOG"].' /exec trace'); // debug
 

@@ -1,0 +1,4 @@
+        $buffer = $connectionHandler->fast_request($prompt,                                                                                               
+            ["MAX_TOKENS" => 64, "temperature" => 0.7], 
+            "sceneclassifier"
+        ); 

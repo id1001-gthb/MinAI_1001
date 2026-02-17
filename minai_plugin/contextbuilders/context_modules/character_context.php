@@ -183,7 +183,7 @@ function InitializeCharacterContextBuilders() {
         'header' => 'Fertility Status',
         'description' => 'Character fertility status',
         'priority' => 50,
-        'is_nsfw' => true,
+        //'is_nsfw' => true,
         'enabled' => isset($GLOBALS['minai_context']['fertility']) ? (bool)$GLOBALS['minai_context']['fertility'] : true,
         'builder_callback' => 'BuildFertilityContext'
     ]);
@@ -348,12 +348,16 @@ function BuildPhysicalDescriptionContext($params) {
     }
     if ($is_nsfw) {
         if ($isnaked || $isexposed) {
-            $ret .= GetPenisSize($character);
-        } elseif ($gender == 'male') {
-            $arousalThreshold = intval(GetActorValue($GLOBALS['PLAYER_NAME'], "arousalForHarass"));
-            $arousal = intval(GetActorValue($character, "arousal"));
-            if (($arousal > 80) && ($arousal >= $arousalThreshold)) {
-                $ret.= "<penis_erection_status>{$character} has a visible erection.</penis_erection_status> ";
+            if ($gender == 'male') {
+                $ret .= GetPenisSize($character);
+
+                $ret .= GetPenisSizeDetails($character, $race, false);
+                
+                $arousalThreshold = intval(GetActorValue($GLOBALS['PLAYER_NAME'], "arousalForSex")); // arousalForSex arousalForHarass
+                $arousal = intval(GetActorValue($character, "arousal"));
+                if (($arousal > 80) && ($arousal >= $arousalThreshold)) {
+                    $ret.= "<penis_erection_status>{$character} has a visible erection.</penis_erection_status> ";
+                }
             }
         } 
     }
@@ -367,7 +371,12 @@ function BuildPhysicalDescriptionContext($params) {
  * @return string Formatted penis size description
  */
 function GetPenisSize($name) {
-    $tngsize = GetActorValue($name, "tngsize");
+    $s_sz = GetActorValue($name, "tngsize");
+    if (strlen($s_sz) > 0)
+        $tngsize = intval($s_sz);
+    else 
+        $tngsize = -1;
+    
     $gender = strtolower(GetActorValue($name, "gender"));
     $isPlayer = IsPlayer($name);
     // Get the size stage (0-4 scale)
@@ -418,6 +427,59 @@ function GetPenisSize($name) {
     }
     
     return "";
+}
+
+function GetPenisSizeShort($name) {
+    $s_sz = GetActorValue($name, "tngsize");
+    if (strlen($s_sz) > 0)
+        $tngsize = intval($s_sz);
+    else 
+        $tngsize = -1;
+    
+    $gender = strtolower(GetActorValue($name, "gender"));
+    //$isPlayer = IsPlayer($name);
+    // Get the size stage (0-4 scale)
+    $sizeStage = 2; // Default to average
+    if (!HasKeyword($name, "TNG_Gentlewoman") && $gender == "female") {
+        $sizeStage = -1;
+    }
+    elseif (HasKeyword($name, "TNG_XL") || ($tngsize == 4)) {
+        $sizeStage = 4;
+    }
+    elseif (HasKeyword($name, "TNG_L") || ($tngsize == 3)) {
+        $sizeStage = 3;
+    }
+    elseif (HasKeyword($name, "TNG_M") || HasKeyword($name, "TNG_DefaultSize") || ($tngsize == 2)) {
+        $sizeStage = 2;
+    }
+    elseif (HasKeyword($name, "TNG_S") || ($tngsize == 1)) {
+        $sizeStage = 1;
+    }        
+    elseif (HasKeyword($name, "TNG_XS") || ($tngsize == 0)) {
+        $sizeStage = 0;
+    }
+    
+    // Map stage to description
+    $sizeDescription = "";
+    if ($gender == "male") {
+        switch ($sizeStage) {
+            case 0: $sizeDescription = "a tiny prick"; break;
+            case 1: $sizeDescription = "a small cock"; break;
+            case 2: $sizeDescription = "an average sized cock"; break;
+            case 3: $sizeDescription = "a large cock"; break;
+            case 4: $sizeDescription = "a huge cock"; break;
+            default: $sizeDescription = "";
+        }
+    }
+    
+    if (strlen($sizeDescription) > 0) {
+        //exceptions dictionary:         character_context_size_dict.php
+
+        $sizeDescription = " - has " . $sizeDescription;
+    }
+
+    return $sizeDescription;
+    
 }
 
 /**
@@ -898,7 +960,7 @@ function BuildCareerContext($params) {
     }
     
     // Get the character's career
-    $career = GetActorValue($character, "career");
+    $career = GetActorValue($character, "career", true);
     if (empty($career)) {
         return "";
     }

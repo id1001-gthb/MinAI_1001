@@ -99,41 +99,146 @@ function ProcessIntegrations() {
             // This is sent once by the SKSE plugin when the game is loaded. Do our initialization here.
             minai_log("info", "Initializing");
 
+            $b_do_patch = false;
+            $b_do_clean = false;
+
+            $s_min_ver = getMinaiVersionFile();
+            $s_chim_version = getChimVersionFile(); // get CHIM version from .version_number.txt
+            error_log("[init] MinAI version {$s_min_ver} started.");
+            error_log("[init] CHIM version {$s_chim_version} ");
+
+            $s_prev_version = getChimVersion(); //getConfOptionValue
+            if ($s_chim_version != $s_prev_version) {
+                $b_do_patch = true;
+                setChimVersion($s_chim_version);
+                if ((strlen($s_prev_version) > 0) && (strlen($s_chim_version) > 0))
+                    error_log("[init] CHIM version updated from {$s_prev_version} to {$s_chim_version} ");
+            } 
+
+            $s_min_prev_ver = getMinaiVersion();
+            if ($s_min_ver != $s_min_prev_ver) {
+                $b_do_patch = true;
+                setMinaiVersion($s_min_ver);
+                if ((strlen($s_min_prev_ver) > 0) && (strlen($s_min_ver) > 0))
+                    error_log("[init] CHIM version updated from {$s_min_prev_ver} to {$s_min_ver} ");
+            } 
+
+            $i_crt = time();
+            $i_dtime = $i_crt - getLastRun();
+            if ($i_dtime > 8192) {
+                $b_do_patch = true;
+                $b_do_clean = true;
+                setLastRun($i_crt);
+            }
+
+            // always do
             DropThreadsTableIfExists();
-            SetAutoVacuum();
             InitiateDBTables();
             importXPersonalities();
             importScenesDescriptions();
-            
-            
-            $exec_mode = getConfOptionValue("chim_mode");
-            error_log("Current CHIM execution mode={$exec_mode} ");
+
+            //$exec_mode = getConfOptionValue("chim_mode");
+            //error_log("Current CHIM execution mode={$exec_mode} ");
             setConfOption("chim_mode","");
-            //deleteConfOption("_minai_RADIANT//lastInput");
+            deleteConfOption("_minai_RADIANT//lastInput");
             deleteConfOption("current_oghma_topic");
             setConfOption("debug_data_raw","");
-            //deleteConfOption("COMBAT_BARK_LAST_TIMESTAMP");
-            //deleteConfOption("NARRATOR_WELCOME_TIMESTAMP");
-            //deleteConfOption("");
+            //deleteConfOption("COMBAT_BARK_LAST_ TIME STAMP");
+            //deleteConfOption("NARRATOR_ WEL COME_ TIME STAMP");
 
-            //m_init.sh
+            setConfOption("_minai_Hercules the Dog//tngsize","4");
+            setConfOption("_minai_Sceolang//tngsize","4");
+            setConfOption("_minai_Inigo//tngsize","4");
+            setConfOption("_minai_Lucifer//tngsize","4");
+            setConfOption("_minai_Ogol//tngsize","4");
+            setConfOption("_minai_Derkeethus//tngsize","4");
+            setConfOption("_minai_Faendal//tngsize","3");
+            setConfOption("_minai_Golldir//tngsize","3");
+            setConfOption("_minai_Karlossos the Riekling//tngsize","4");
+            setConfOption("_minai_Sabretooth//tngsize","4");
+            setConfOption("_minai_Thonar Silver-Blood//tngsize","1");
+            setConfOption("_minai_Farkas//tngsize","4");
+            //setConfOption("//tngsize","4");
+            //setConfOption("//tngsize","4");
+            
+            $b_dirt = boolval($GLOBALS['minai_context']['dirt_and_blood'] ?? false);
+            if (!$b_dirt) {
+                // clean conf opt _minai_...//dirtAndBlood
+                deleteAllConfOptions("%//dirtAndBlood"); 
+            }
+
+            if ($b_do_patch) {
+                $startScript = (__DIR__."/utils/xtra/m_patch_all.sh"); // "/var/www/html/HerikaServer/ext/minai_plugin/utils/xtra/m_patch_all.sh";
+                if (file_exists($startScript) && is_executable($startScript)) {
+                    $output = [];
+                    $retval = null;
+                    $res = exec($startScript, $output, $retval);
+                    $res = $res ? $res : "F";
+                    error_log("[init] exec {$startScript} res={$res} return code={$retval} output: " . print_r($output,true));
+                } else 
+                    error_log("[init] ERROR file not found or not executable: {$startScript} ");
+                
+                // ENFORCE_ACTIONS_PROMPT
+                try {
+                    $db = $GLOBALS['db'];
+                    
+                    $query = " UPDATE public.core_llm_connector SET metadata['remove_action_prompt'] = 'false'; ";
+                    $db->execQuery($query);        
+                    
+                    $query = " UPDATE public.core_npc_master SET extended_data['ENFORCE_ACTIONS_PROMPT'] = 'true'; ";
+                    $db->execQuery($query);        
+
+                    $query = " UPDATE public.core_profiles SET metadata['ENFORCE_ACTIONS_PROMPT'] = 'true'; ";
+                    $db->execQuery($query);        
+                    
+                    error_log("[init] action prompts patch done. ");
+                    
+                } catch (Exception $e) {
+                    $b_ok = false;
+                    error_log("[init] ERROR patching action prompts " . $e->getMessage());
+                }                
+            }
+
+            if ($b_do_clean) {
+
+                // check file attributes     
+                $s_main_folder = "/var/www/html/HerikaServer";
+                $arr_files = check_executable_files($s_main_folder);
+                if (isset($arr_files) && (count($arr_files)>0)) {
+                    error_log("[init] WARNING: there are files with wrong attributes in {$s_main_folder} folder! You need to fix file permissions, otherwise this application may not work. \n" . print_r($arr_files,true));
+                } else error_log("[init] files attributes checked in {$s_main_folder} folder, all OK! ");
+            
+                //m_init.sh 
+                $startScript = (__DIR__."/m_init.sh"); //"/var/www/html/HerikaServer/ext/minai_plugin/m_init.sh";
+                if (file_exists($startScript) && is_executable($startScript) ) {
+                    $output = [];
+                    $retval = null;
+                    $res = exec($startScript, $output, $retval);
+                    error_log("[init] exec {$startScript} return code={$retval} output: " . print_r($output,true));
+                } else 
+                    error_log("[init] file not found or not executable: {$startScript} ");
+
+                // CHIM action editor is incompatible with MinAI
+                $s_filter_file = __DIR__."/../../functions/user_pref.json"; // "/var/www/html/HerikaServer/functions/user_pref.json";
+                if (is_file($s_filter_file)) {
+                    error_log("found actions filter: s_filter_file "); // debug
+                    unlink($s_filter_file);
+                }
+
+                SetAutoVacuum();
+            
+            }
+            
+            // manage CHIM log files
             /*
-            $startScript = "/var/www/html/HerikaServer/ext/minai_plugin/m_init.sh";
-            if (file_exists($startScript) && is_executable($startScript) ) {
-                $output = [];
-                $retval = null;
-                $res = exec($startScript, $output, $retval);
-                Logger::debug("exec {$startScript} return code={$retval} output: " . print_r($output,true));
-            } else 
-                Logger::warn("file not found or not executabe: {$startScript} ");
-            */
-            // check file attributes     
-            $s_main_folder = "/var/www/html/HerikaServer";
-            $arr_files = check_executable_files($s_main_folder);
-            if (isset($arr_files) && (count($arr_files)>0)) {
-                error_log("ERROR: there are files with wrong attributes in {$s_main_folder} folder! You need to fix file permissions, otherwise this application will not work. \n" . print_r($arr_files,true));
-            } else error_log("OK: files attributes checked in {$s_main_folder} folder! ");
-
+            $s_path = LOG_PATH . DIRECTORY_SEPARATOR ;
+            $s_files = glob($s_path . '*.txt');
+            foreach ($s_files as $file) {
+                if (is_file($file)) {
+                    unlink($file);
+                }
+            } */
+            
             $MUST_DIE=true;
 
         } else if ($s_type == "storecontext") {
@@ -254,23 +359,6 @@ function ProcessIntegrations() {
             ];
         }
     
-        /* 
-        bad
-        if (in_array($s_type, ["rechat", "bored", "radiant", "radiantsearchinghostile", "radiantsearchingfriend", "radiantcombathostile", "radiantcombatfriend", 
-                "minai_force_rechat", "narrator_inputtext", "narration", "instruction", "welcome", "cheatmode"])) {     
-        original:         
-        if (isset($GLOBALS["gameRequest"]) && in_array(strtolower($GLOBALS["gameRequest"][0]), 
-        ["radiant", "radiantsearchinghostile", "radiantsearchingfriend", "radiantcombathostile", "radiantcombatfriend", "minai_force_rechat"])) {
-
-        tested: 
-        if (in_array($s_type, ["minai_force_rechat", "rechat", "narration", "bored", "radiant", 
-            "radiantsearchinghostile", "radiantsearchingfriend", "radiantcombathostile", "radiantcombatfriend"])) { // narration is rechat   "narrator_inputtext", "narration"])) {
-        
-        "narration" - is rechat   
-        
-        "narrator_inputtext"
-
-        */
         if (in_array($s_type, ["minai_force_rechat","radiant","radiantsearchinghostile","radiantsearchingfriend","radiantcombathostile","radiantcombatfriend"])) { 
             $f_delay = time() - GetLastInput(); //seconds
             $b_safe = ($f_delay >= 1) && ($f_delay > ($GLOBALS["input_delay_for_radiance"] ?? 3)) ;
@@ -379,7 +467,7 @@ function ProcessIntegrations() {
             ];
             
             // Add singing-specific personality traits
-            $GLOBALS["HERIKA_PERS"] .= "\nWhen singing, you should be musical and poetic. Format your responses as song lyrics or poetry.\n";
+            $GLOBALS["HERI KA_PERS"] .= "\nWhen singing, you should be musical and poetic. Format your responses as song lyrics or poetry.\n";
             
             // Force response to be musical
             $GLOBALS["TEMPLATE_ DIALOG"] = "Respond with song lyrics or a musical performance.";
@@ -446,7 +534,7 @@ function ProcessIntegrations() {
                     } 
                     else {
                         // For non-initial batches (partial or final), get existing temporary inventory
-                        $existingInventory = GetActorValue($actorName, "Inventory2", false, true);
+                        $existingInventory = GetActorValue($actorName, "Inventory2", true, true);
                         
                         // Parse existing inventory if any
                         if (!empty($existingInventory)) {
@@ -479,7 +567,7 @@ function ProcessIntegrations() {
                     
                     // Even if this batch is empty, we still need to process the finalization
                     // if there's any data in the temporary inventory
-                    $existingInventory = GetActorValue($actorName, "Inventory2", false, true);
+                    $existingInventory = GetActorValue($actorName, "Inventory2", true, true);
                     if (!empty($existingInventory)) {
                         // Parse the existing inventory to create the final inventory items array
                         $existingItems = explode("~", $existingInventory);

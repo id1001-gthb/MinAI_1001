@@ -8,7 +8,7 @@ $GLOBALS['formIdCache'] = [];
 // Helper function to get actor inventory
 function GetActorInventoryItems($actorName) {
     $inventory = [];
-    $inventoryStr = GetActorValue($actorName, "Inventory");
+    $inventoryStr = GetActorValue($actorName, "Inventory", true);
     
     if (empty($inventoryStr)) {
         minai_log("debug", "No inventory data found for actor: " . $actorName);
@@ -255,7 +255,7 @@ if (IsPlayer($GLOBALS["target"])) {
     directRegisterAction(
         "ExtCmdGiveItem", 
         "GiveItem", 
-        "Used when {$targetName} needs to give or hand over an item to {$playerName}. The target MUST be specified as 'ItemName:Count' for vanilla items or 'ItemName:modName:Count' for items from mods. ItemName represents the item name, Count is the quantity, and modName is an optional parameter representing the mod file where ItemName is defined. This action should be used for all scenarios where {$targetName} is the giver and {$playerName} is the receiver of item - including when {$targetName} offers something to {$playerName} or indicates that they are giving something to {$playerName}. Available items that can be given: {$targetItemsStr}.",
+        "Used when {$targetName} needs to give or hand over an item to {$playerName}. The target MUST be specified as 'ItemName:Count'. ItemName represents the item name, Count is the quantity, and modName is an optional parameter representing the mod file where ItemName is defined. This action should be used for all scenarios where {$targetName} is the giver and {$playerName} is the receiver of item - including when {$targetName} offers something to {$playerName} or indicates that they are giving something to {$playerName}. Available items that can be given: {$targetItemsStr}.",
         true
     );
         
@@ -263,7 +263,7 @@ if (IsPlayer($GLOBALS["target"])) {
     directRegisterAction(
         "ExtCmdTakeItem", 
         "TakeItem", 
-        "Used when {$targetName} needs to take or receive an item from {$playerName}. The target MUST be specified as 'ItemName:Count' for vanilla items or 'ItemName:modName:Count' for items from mods. ItemName represents the item name, Count is the quantity, and modName is an optional parameter representing the mod file where ItemName is defined. This action must be used for all scenarios where {$playerName} is the giver and {$targetName} is the receiver of item - including when {$playerName} offers something to {$targetName} or {$playerName} indicates that they are giving you something. Available items that can be received: {$playerItemsStr}.",
+        "Used when {$targetName} needs to take or receive an item from {$playerName}. The target MUST be specified as 'ItemName:Count'. ItemName represents the item name, Count is the quantity, and modName is an optional parameter representing the mod file where ItemName is defined. This action must be used for all scenarios where {$playerName} is the giver and {$targetName} is the receiver of item - including when {$playerName} offers something to {$targetName} or {$playerName} indicates that they are giving you something. Available items that can be received: {$playerItemsStr}.",
         true
     );
     

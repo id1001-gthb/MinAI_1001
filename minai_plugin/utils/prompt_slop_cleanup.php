@@ -98,7 +98,12 @@ function cleanupSlop($contextData) {
         if (!(strpos($s_content, '# pois - points of interest nearby') === false)) {
                 continue;
         } 
-
+        
+        //A MAJOR TIME JUMP HAS OCCURRED
+        if (!(strpos($s_content, 'a major time jump has occurred') === false)) {
+                continue;
+        } 
+        
         if (isset($entry['role'])) {
             if ($entry['role'] == 'assistant') {
                 if (strlen(trim($originalContent)) > 0) {
@@ -177,6 +182,11 @@ function cleanupSlop($contextData) {
 
             //'content' => 'Quest Updated "My Pet Nix-Hound" new objetive: Read the Notice of Sale 
             if ((!(strpos($sl_line, 'quest updated ') === false)) && (!(strpos($sl_line, ' new objetive: ') === false)))  { // this spamming with entire quests list; there are better options to see only current quests
+                continue;
+            }
+
+            //'(Context new location: Mistwatch outdoors ,Hold: Eastmarch, current date Day name: Tirdas, Hour: 7:37 AM, Day Number: 30, Month: Heartfire, 4th Era, Year: 201, current weather: cloudy,)'
+            if (!(strpos($sl_line, '(context new location: ') === false))  { 
                 continue;
             }
 
@@ -261,6 +271,10 @@ function cleanupSlop($contextData) {
             }
 
             if ($line_length < 36) {
+                //--- Happened Recently ---
+                if (!(strpos($sl_line, '- happened recently -') === false)) {
+                    continue;
+                }
                 if (!(strpos($sl_line, ': huh?') === false)) {
                     continue;
                 }
@@ -301,6 +315,10 @@ function cleanupSlop($contextData) {
                     continue;
                 }
 
+                // 2x FAMILIAR DIED
+                if (!(strpos($sl_line, 'familiar died') === false)) {
+                    continue;
+                }
                 // Sheep died
                 if ($sl_line == 'sheep died') {
                     continue;
@@ -382,8 +400,33 @@ function cleanupSlop($contextData) {
                     continue;
                 }
 
-            }
+                if ($sl_line == 'hagraven has killed deer') {
+                    continue;
+                }
+                if ($sl_line == 'hagraven has killed elk') {
+                    continue;
+                }
+                if ($sl_line == 'hagraven has killed goat') {
+                    continue;
+                }
+                if ($sl_line == 'hagraven has killed rabbit') {
+                    continue;
+                }
 
+                if (!(strpos($sl_line, 'bandit has killed deer') === false)) {
+                    continue;
+                }
+                if (!(strpos($sl_line, 'bandit has killed elk') === false)) {
+                    continue;
+                }
+                if (!(strpos($sl_line, 'bandit has killed goat') === false)) {
+                    continue;
+                }
+                if (!(strpos($sl_line, 'bandit has killed rabbit') === false)) {
+                    continue;
+                }
+
+            }
 
             // Check if this is a "Time passes" message
             if ((!(strpos($sl_line, '(time passes without anyone in the group talking)') === false)) && ($line_length < 99)) {
@@ -427,6 +470,72 @@ function cleanupSlop($contextData) {
             //LOCATION CHANGE to 
             if (strpos($sl_line, "location change to ") === 0) {
                 continue;
+            }
+            
+            if (($line_length < 36) && (strpos($sl_line, "--- ") !== false)) { // has time mark ? <time_reference> 
+                if (strpos($sl_line, "--- moments ago ---") !== false) {
+                    $content = str_ireplace("--- moments ago ---", "<time_reference> Moments ago </time_reference>", $line);
+                    $line = $content;
+                    $sl_line = strtolower(trim($line));
+                } elseif (strpos($sl_line, "--- a few minutes ago ---") !== false) {
+                    $content = str_ireplace("--- a few minutes ago ---", "<time_reference> A few minutes ago </time_reference>", $line);
+                    $line = $content;
+                    $sl_line = strtolower(trim($line));
+                } elseif (strpos($sl_line, "--- a while ago ---") !== false) {
+                    $content = str_ireplace("--- a while ago ---", "<time_reference> A while ago </time_reference>", $line);
+                    $line = $content;
+                    $sl_line = strtolower(trim($line));
+                } elseif (strpos($sl_line, "--- about an hour ago ---") !== false) {
+                    $content = str_ireplace("--- about an hour ago ---", "<time_reference> About an hour ago </time_reference>", $line);
+                    $line = $content;
+                    $sl_line = strtolower(trim($line));
+                } elseif (strpos($sl_line, "--- a couple of hours ago ---") !== false) {
+                    $content = str_ireplace("--- a couple of hours ago ---", "<time_reference> A couple of hours ago </time_reference>", $line);
+                    $line = $content;
+                    $sl_line = strtolower(trim($line));
+                } elseif (strpos($sl_line, "--- earlier in the day ---") !== false) {
+                    $content = str_ireplace("--- earlier in the day ---", "<time_reference> Earlier in the day </time_reference>", $line);
+                    $line = $content;
+                    $sl_line = strtolower(trim($line));
+                } elseif (strpos($sl_line, "--- A day ago ---") !== false) {
+                    $content = str_ireplace("--- A day ago ---", "<time_reference> A day ago </time_reference>", $line);
+                    $line = $content;
+                    $sl_line = strtolower(trim($line));
+                }    
+            }            
+
+            if ((strpos($sl_line, " shit...") !== false)) { 
+                $content = str_ireplace(" shit...", " ", $line);
+                $line = $content;
+                $sl_line = strtolower(trim($line));
+            }
+            if ((strpos($sl_line, " fuck...") !== false)) { 
+                $content = str_ireplace(" fuck...", " ", $line);
+                $line = $content;
+                $sl_line = strtolower(trim($line));
+            }
+            //'content' => 'Player:Felicia@Chief Mauhulakh@Please join us for sex! (Talking to Faendal)
+            if ((strpos($sl_line, "@please join us for sex") !== false)) { 
+                $arr_x = explode("@",$content);
+                if (is_array($arr_x) && (count($arr_x) > 1)) {
+                    $s_speaker = $arr_x[0] ?? '';
+                    $s_target = $arr_x[1] ?? '';
+                    if (strlen($s_target) > 0) {
+                        if (strpos($s_speaker,":") !== false) {
+                            $arr_z = explode(":",$s_speaker);
+                            if (is_array($arr_z) && (count($arr_z) > 0)) {
+                                $s_speaker = $arr_z[1] ?? '';
+                            }
+                        }
+                        if (strlen($s_speaker) > 0) 
+                            $content = "({$s_speaker} invited {$s_target} to join them for sex.)";
+                        else
+                            $content = "({$s_target} was invited to join the sex scene.)";
+                        $line = $content;
+                        $sl_line = strtolower(trim($line));
+                        //error_log("line: {$line}"); // debug
+                    }
+                }
             }
             
             if (stripos($content, ' has defeated ') !== false) { // has defeated 

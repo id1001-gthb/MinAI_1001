@@ -1,0 +1,9 @@
+    $lastDialogFull = array();
+    $b_actor = (strlen($actor) > 0);
+    if ($b_actor)
+        $actorEscaped=$db->escape($actor);
+    else
+        $actorEscaped='';
+    //$playerEscaped=$db->escape($GLOBALS["PLAYER_NAME"]);
+    
+    $query="select 

@@ -1,0 +1,2 @@
+// Database Prompt (Command Coherent Prompt)
+$COMMAND_PROMPT_ENFORCE_ACTIONS="(If you want to initiate an ACTION, choose an ACTION that fits the context)";

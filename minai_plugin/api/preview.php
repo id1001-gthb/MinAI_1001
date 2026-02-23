@@ -66,8 +66,8 @@ try {
 
     // Get recent context using configured value
     $contextMessages = $GLOBALS['roleplay_settings']['context_messages'];
-    $contextDataHistoric = GetRecentContext("", $contextMessages);
-    $contextDataWorld = DataLastInfoFor("", -2);
+    $contextDataHistoric = GetRecentContext("", $contextMessages) ?? [];
+    $contextDataWorld = DataLastInfoFor("", -2) ?? [];
     $contextDataFull = array_merge($contextDataWorld, $contextDataHistoric);
     $mindState = convertToFirstPerson(callContextBuilder('mind_influence', $params), $playerName, $playerPronouns);
     $relationshipStatus = convertRelationshipStatus($actorName);

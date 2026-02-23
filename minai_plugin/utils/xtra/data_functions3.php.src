@@ -1,0 +1,12 @@
+    ".(($actorEscaped)?" 
+    and (
+     people like '%|$actorEscaped|%' 
+     or people like '$actorEscaped' 
+     or people like '%|$actorEscaped (busy)|%'
+     OR people LIKE '%|$actorEscaped (hostile)|%' 
+     OR people LIKE '%|$actorEscaped (in combat)|%' 
+     or type='info_timeforward' )
+    ":"")." 
+    and type<>'funccall' $removeBooks  and type<>'togglemodel' $sqlfilter  ".
+    ((false)?" and gamets>".($currentGameTs-(60*60*60*60)):"").
+    " order by gamets desc, ts desc, rowid desc LIMIT $nRecordsLimit OFFSET 0";

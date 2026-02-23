@@ -1,5 +1,5 @@
 <?php
-// not to be included explicitly, must be included only via requireFilesRecursively()
+// not to be included explicitly, must be included only via requireFilesRecursively() L 1085
 
 /**
  * MinAI Pre-request Processing
@@ -12,10 +12,40 @@ require_once("util.php");
 require_once("contextbuilders.php");
 require_once("prompts/info_prompts.php");
 
-$GLOBALS["speaker"] = $GLOBALS["HERIKA_NAME"];
+//error_log("-- prerequest -- ");
+
+//$GLOBALS["ENFORCE_ACTIONS_  PROMPT"] = true;
+//SaveOriginalHerikaName();
+
+if (isset($GLOBALS["TTS_FFMPEG_FILTERS"]["tempo"])) {
+	$s_tempo = $GLOBALS["TTS_FFMPEG_FILTERS"]["tempo"];  
+	error_log("TTS_FFMPEG_FILTERS {$s_tempo} - exec trace " .__FILE__." ".__LINE__); // debug
+
+	if (stripos($s_tempo,"atempo=0.") !== false ) {
+		$GLOBALS["TTS_FFMPEG_FILTERS"]["tempo"] = 'atempo=0.97'; 
+	} else {
+		if (stripos($s_tempo,"atempo=1.") !== false ) { //='atempo=1.45';
+			$GLOBALS["TTS_FFMPEG_FILTERS"]["tempo"] = 'atempo=1.03'; 
+		}
+	}
+}
 
 if (!isset($GLOBALS["db"]))
 	$GLOBALS["db"] = new sql();
+
+$GLOBALS["speaker"] = $GLOBALS["HERIKA_NAME"];
+
+// Cache target actor
+$GLOBALS["target"] = GetTargetActor();
+$GLOBALS["target_gender"] = GetGender($GLOBALS["target"]); //Is Female($GLOBALS["target"]) ? "female" : "male";
+$GLOBALS["target_pronouns"] = GetActorPronouns($GLOBALS["target"]);
+
+//if (!empty($GLOBALS["RANDOM_NARATION"]) && $GLOBALS["RANDOM_NARATION"] && $gameRequest[0] === "rechat"
+if ((IsRadiant()) || (IsSexActive())) {
+	//error_log(" Radiant - exec trace "); //debug
+	$GLOBALS["BORED_EVENT_SERVERSIDE"] = false; // MinAI radiant will suspend CHIM bored ss event
+	$GLOBALS["RANDOM_NARATION"] = false;
+}
 
 if ((!isset($GLOBALS["action_prompts"]["normal_scene"])) ||
     (!isset($GLOBALS["action_prompts"]["explicit_scene"])) ||
@@ -44,7 +74,7 @@ if (!isset($GLOBALS['minai_metrics_file'])) {
 // Translate or fix some NPC conf. values 
 //---------------------------------------
 if ($gameRequest[0] == "setconf") {
-    
+	
     $vars=explode("@",$gameRequest[3]);
 	
 	if (!(strpos($vars[0],'_minai_') === false)) {
@@ -56,19 +86,35 @@ if ($gameRequest[0] == "setconf") {
 		$i_slash = strpos($sl_key,'/',7);
 		if ($i_slash > 7)
 			$sl_name = substr($sl_key,7,$i_slash-7);
+
+		//error_log("[setconf] $gameRequest[3] $key $value $sl_name - exec trace "); //debug
 		
 		if (strpos($sl_key,'//gender') > 0) {
 			if (strpos("female,male,other.", $sl_value) === false) { // sexlab gender determination error for non-humans, fallback to male, statistically most probable
 				$value = "male";
 			}
-			//error_log("$sl_key $sl_value -> $value - exec trace "); //debug
+			//error_log("[gender] $sl_key $sl_value -> $value - exec trace "); //debug
 		} elseif (strpos($sl_key,'//race') > 0) {
+			//error_log("[race] $sl_key $sl_value -> $value - exec trace "); //debug
 			if ($value == "nord")
 				$value = "Nord";
 			elseif ($value == "IMPERIAL") 
 				$value = "Imperial";
+				//Mushroom Race
+			elseif ($sl_value == "mushroom race") 
+				$value = "Mushroom";
+			elseif ($sl_name == "boofer")
+				$value = "Mushroom";
 			elseif ($sl_name == "felicia")
 				$value = "Breton-Elf mixed";
+			elseif ($sl_name == "rooster")
+				$value = "chiken"; //Rooster (rabbit male) - naked
+			elseif ($sl_name == "chick")
+				$value = "chiken"; 
+			elseif ($sl_name == "hen")
+				$value = "chiken"; 
+			elseif ($sl_name == "cow")
+				$value = "cow"; 
 			elseif (strlen(trim($value)) < 1) {
 				if ($sl_name == "karlossos the riekling")
 					$value = "Riekling";
@@ -80,6 +126,7 @@ if ($gameRequest[0] == "setconf") {
 					$value = "Riekling";
 				elseif (strpos($sl_name,"riekling") !== false) 	
 					$value = "Riekling";
+					
 			} elseif (strpos($sl_value,' tkaa') > 0) {
 				$value = str_ireplace(' TKAA','',$value);
 			}
@@ -104,6 +151,8 @@ if ($gameRequest[0] == "setconf") {
 				$value = 'knowledge engineering enhanced warrior, the first of its kind';
 			//elseif ($sl_value == '')
 				//$value = '';
+			elseif ($sl_name == "boofer")
+				$value = "Felicia's protector";
 			elseif ($sl_name == "aela the huntress")
 				$value = 'companions warrior and Werewolf';
 			elseif ($sl_name == "sorine jurard")
@@ -123,13 +172,16 @@ if ($gameRequest[0] == "setconf") {
 		if ($vars[1] != $value) {
 			$vars[1] = $value;
 			$gameRequest[3] = implode("@",$vars);
-			//error_log("$gameRequest[3] / name=$sl_name key=$key value=$sl_value -> $value - exec trace "); //debug
+			//error_log("[prq] $gameRequest[3] / name=$sl_name key=$key value=$sl_value -> $value - exec trace "); //debug
 		}
 	}
 	
 }
 //---------------------------------------
 
+//if (in_array($gameRequest[0],["rechat","narration"]) ) {
+	
+	
 // Avoid processing for fast / storage events
 if (isset($GLOBALS["minai_skip_processing"]) && $GLOBALS["minai_skip_processing"]) {
     return;
@@ -141,6 +193,13 @@ minai_start_timer('prerequest_php', 'MinAI');
 
 $GLOBALS["minai_processing_input"] = false;
 
+if (IsSexActive()) {
+	//SetRadiance(0, 0); // Disable rechat during radiant conversations, as this is handled by MinAI's controller in-game
+	$GLOBALS["BORED_EVENT_SERVERSIDE"] = false; // MinAI radiant will suspend CHIM bored sside event
+	$GLOBALS["RANDOM_NARATION"] = false;
+} else {
+	//CheckRechat(3, 50);
+}
 
 if (IsRadiant()) {
 	SetRadiance(0, 0); // Disable rechat during radiant conversations, as this is handled by MinAI's controller in-game
@@ -148,6 +207,7 @@ if (IsRadiant()) {
 } else {
 	CheckRechat(3, 50);
 }
+
 SaveOriginalHerikaName();
 SetNarratorProfile();
 
@@ -244,6 +304,7 @@ if (isset($GLOBALS["realnames_support"]) && $GLOBALS["realnames_support"]) {
 }
 
 $GLOBALS["LLM_RETRY_FNCT"] = function() {
+	/* disable, CHIM is doing this now
     if (isset($GLOBALS['use_llm_fallback']) && !$GLOBALS['use_llm_fallback']) {
         minai_log("info", "LLM fallback is disabled - skipping retry");
         return false;
@@ -256,10 +317,13 @@ $GLOBALS["LLM_RETRY_FNCT"] = function() {
         minai_log("info", "Warning: LLM returned invalid output after retry.");
     }
     return $outputWasValid;
+	*/
+    return false;
 };
 
 $GLOBALS["VALIDATE_LLM_OUTPUT_FNCT"] = function($output) {
-    return validateLLMResponse($output);
+    //return validateLLMResponse($output);
+	return true;
 };
 
 
@@ -300,7 +364,7 @@ function getItemByName($itemName) {
             return $selected;
         }
         
-        return count($result) > 0 ? $result[0] : null;
+        return (count($result) > 0) ? $result[0] : null;
     } catch (Exception $e) {
         minai_log("error", "Error in getItemByName: " . $e->getMessage());
         return null;
@@ -398,14 +462,20 @@ $GLOBALS["action_post_process_fnct"] = function($actions) {
                                 $paramParts = explode(':', $parameter);
                                 $itemName = trim($paramParts[0]);
                                 $count = isset($paramParts[1]) ? intval(trim($paramParts[1])) : 1;
-                                
+                                if ($count > 100) $count = 100;
+                                elseif ($count < 1) $count = 1;
+								
                                 $itemInfo = getItemByName($itemName);
                                 if ($itemInfo) {
-                                    $newParameter = "{$itemInfo['item_id']}:{$itemInfo['file_name']}:{$count}";
-                                    minai_log("info", "Converted '{$parameter}' to '{$newParameter}'");
-                                    
-                                    // Rebuild the action string
-                                    $actions[$key] = "{$actor}|{$cmdType}|{$cmd}@{$newParameter}\r\n";
+									$itm_id = $itemInfo['item_id'] ?? '';
+									$itm_file = $itemInfo['file_name'] ?? '';
+									if ((strlen($itm_id) > 4) && (strlen($itm_file) > 4)) {
+										$newParameter = "{$itm_id}:{$itm_file}:{$count}";
+										minai_log("info", "Converted '{$parameter}' to '{$newParameter}'");
+										
+										// Rebuild the action string
+										$actions[$key] = "{$actor}|{$cmdType}|{$cmd}@{$newParameter}\r\n";
+									}
                                 } else {
                                     minai_log("warn", "Item not found in database: {$itemName}");
                                 }
@@ -475,9 +545,9 @@ $GLOBALS["action_post_process_fnct"] = function($actions) {
 };
 
 // Only create the fallback config if the feature is enabled
-if (isset($GLOBALS['use_llm_fallback']) && $GLOBALS['use_llm_fallback']) {
-    CreateFallbackConfig();
-}
+//if (isset($GLOBALS['use_llm_fallback']) && $GLOBALS['use_llm_fallback']) {
+//    CreateFallbackConfig();
+//}
 
 // Clean up dungeon master input
 if (IsEnabled($GLOBALS["PLAYER_NAME"], "isDungeonMaster")) {
@@ -512,6 +582,5 @@ if (isset($GLOBALS["enable_prompt_slop_cleanup"]) && $GLOBALS["enable_prompt_slo
     $GLOBALS["CONTEXT_HISTORY"] = $nDataForContext * 3;
     // error_log("DEBUG: Context history set to " . $GLOBALS["CONTEXT_HISTORY"]);
 }
-
 
 minai_stop_timer('prerequest_php');

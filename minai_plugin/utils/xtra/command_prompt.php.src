@@ -1,0 +1,2 @@
+// Database Prompt (Command Coherent Prompt)
+$COMMAND_PROMPT_ENFORCE_ACTIONS="Choose coherent ACTION to obey {$GLOBALS["PLAYER_NAME"]}.";

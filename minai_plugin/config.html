@@ -1286,7 +1286,7 @@
                                 
                             </div>
 
-                            <!-- use_llm_fallback -->
+                            <!-- use_llm_fallback 
                             <div class="option-group checkbox-group">
                                 <div class="option-label-container">
                                     <label class="option-label" for="use-llm-fallback">Use LLM Fallback</label>
@@ -1298,7 +1298,7 @@
                                     will be charged. The connector settings for the "LLMFallback" profile will be used (This will be created if it doesn't exist when you boot the game),
                                     and it will only work with openrouterjson.</p>
                                 
-                            </div>
+                            </div> -->
 
                             <!-- strip_emotes_from_output -->
                             <div class="option-group checkbox-group">
@@ -1507,7 +1507,7 @@
                                     <label class="option-label" for="use-narrator-profile">Use Narrator Profile</label>
                                     <button class="reset-button" onclick="resetOptionToDefault('use-narrator-profile')">Reset to Default</button>
                                 </div>
-                                <p><input type="checkbox" id="use-narrator-profile"> Use an alternative profile for the narrator instead of the default one.</p>
+                                <p><input type="checkbox" id="use-narrator-profile"> Use an alternative profile for the narrator instead of the default one. Only for CHIM v1.3.5, won't work in CHIM v2.x.x</p>
                                 
                             </div>
 
@@ -1707,7 +1707,7 @@
                             Advanced Settings
                         </div>
                         <div class="section-content collapsed">
-                            <!-- CHIM_NO_EXAMPLES xmd -->
+                            <!-- CHIM_NO_EXAMPLES 
                             <div class="option-group checkbox-group">
                                 <div class="option-label-container">
                                     <label class="option-label" for="chim-no-examples">Disable OpenRouterJSON Examples</label>
@@ -1715,7 +1715,7 @@
                                 </div>
                                 <p><input type="checkbox" id="chim-no-examples"> Disable the examples that are sent to the LLM ("Stop staring at me / What are you looking at?"). Reduces LLM slop, but may cause issues with particularly weak LLMs that rely on these examples.</p>
                                 
-                            </div> 
+                            </div> -->
                             
                             <!-- minai_metrics_enabled -->
                             <div class="option-group checkbox-group">
@@ -2173,7 +2173,7 @@ Intimate: You are roleplaying as #PLAYER_NAME#. Respond naturally as your charac
                 document.getElementById('restrict-nonfollower-functions').checked = configData.restrict_nonfollower_functions;
                 document.getElementById('always-enable-functions').checked = configData.always_enable_functions;
                 document.getElementById('force-aiff-name').checked = configData.force_aiff_name_to_ingame_name;
-                document.getElementById('use-llm-fallback').checked = configData.use_llm_fallback;
+                // document.getElementById('use-llm-fallback').checked = configData.use_llm_fallback;
                 document.getElementById('enforce-single-json').checked = configData.enforce_single_json;
                 document.getElementById('disable-worn-equipment').checked = configData.disable_worn_equipment;
                 document.getElementById('input-delay').value = configData.input_delay_for_radiance;
@@ -2182,7 +2182,7 @@ Intimate: You are roleplaying as #PLAYER_NAME#. Respond naturally as your charac
                 document.getElementById('realnames-support').checked = configData.realnames_support;
                 document.getElementById('inventory-items-limit').value = configData.inventory_items_limit;
                 document.getElementById('use-item-relevancy-scoring').checked = configData.use_item_relevancy_scoring;
-                document.getElementById('chim-no-examples').checked = configData.CHIM_NO_EXAMPLES;
+                //document.getElementById('chim-no-examples').checked = configData.CHIM_NO_EXAMPLES;
                 
                 // Load metrics settings
                 document.getElementById('minai-metrics-enabled').checked = configData.minai_metrics_enabled;
@@ -2323,7 +2323,7 @@ Intimate: You are roleplaying as #PLAYER_NAME#. Respond naturally as your charac
                 restrict_nonfollower_functions: document.getElementById('restrict-nonfollower-functions').checked,
                 always_enable_functions: document.getElementById('always-enable-functions').checked,
                 force_aiff_name_to_ingame_name: document.getElementById('force-aiff-name').checked,
-                use_llm_fallback: document.getElementById('use-llm-fallback').checked,
+                // use_llm_fallback: document.getElementById('use-llm-fallback').checked,
                 enforce_single_json: document.getElementById('enforce-single-json').checked,
                 commands_to_purge: getDynamicList('commands-to-purge-container'),
                 events_to_ignore: getDynamicList('events-to-ignore-container'),
@@ -2332,7 +2332,7 @@ Intimate: You are roleplaying as #PLAYER_NAME#. Respond naturally as your charac
                 strip_emotes_from_output: document.getElementById('strip-emotes').checked,
                 use_defeat: document.getElementById('use-defeat').checked,
                 realnames_support: document.getElementById('realnames-support').checked,
-                CHIM_NO_EXAMPLES: document.getElementById('chim-no-examples').checked,
+                //CHIM_NO_EXAMPLES: document.getElementById('chim-no-examples').checked,
                 inventory_items_limit: parseInt(document.getElementById('inventory-items-limit').value),
                 use_item_relevancy_scoring: document.getElementById('use-item-relevancy-scoring').checked,
                 
@@ -3145,7 +3145,7 @@ Intimate: You are roleplaying as #PLAYER_NAME#. Respond naturally as your charac
                     restrict_nonfollower_functions: document.getElementById('restrict-nonfollower-functions').checked,
                     always_enable_functions: document.getElementById('always-enable-functions').checked,
                     force_aiff_name_to_ingame_name: document.getElementById('force-aiff-name').checked,
-                    use_llm_fallback: document.getElementById('use-llm-fallback').checked,
+                    // use_llm_fallback: document.getElementById('use-llm-fallback').checked,
                     enforce_single_json: document.getElementById('enforce-single-json').checked,
                     commands_to_purge: getDynamicList('commands-to-purge-container'),
                     events_to_ignore: getDynamicList('events-to-ignore-container'),
@@ -3154,7 +3154,7 @@ Intimate: You are roleplaying as #PLAYER_NAME#. Respond naturally as your charac
                     strip_emotes_from_output: document.getElementById('strip-emotes').checked,
                     use_defeat: document.getElementById('use-defeat').checked,
                     realnames_support: document.getElementById('realnames-support').checked,
-                    CHIM_NO_EXAMPLES: document.getElementById('chim-no-examples').checked,
+                    //CHIM_NO_EXAMPLES: document.getElementById('chim-no-examples').checked,
                     inventory_items_limit: parseInt(document.getElementById('inventory-items-limit').value),
                     use_item_relevancy_scoring: document.getElementById('use-item-relevancy-scoring').checked,
                     voicetype_fallbacks: getVoiceTypeFallbacks(),
@@ -3263,14 +3263,14 @@ Intimate: You are roleplaying as #PLAYER_NAME#. Respond naturally as your charac
                         document.getElementById('restrict-nonfollower-functions').checked = importedConfig.restrict_nonfollower_functions ?? baseConfig.restrict_nonfollower_functions;
                         document.getElementById('always-enable-functions').checked = importedConfig.always_enable_functions ?? baseConfig.always_enable_functions;
                         document.getElementById('force-aiff-name').checked = importedConfig.force_aiff_name_to_ingame_name ?? baseConfig.force_aiff_name_to_ingame_name;
-                        document.getElementById('use-llm-fallback').checked = importedConfig.use_llm_fallback ?? baseConfig.use_llm_fallback;
+                        // document.getElementById('use-llm-fallback').checked = importedConfig.use_llm_fallback ?? baseConfig.use_llm_fallback;
                         document.getElementById('enforce-single-json').checked = importedConfig.enforce_single_json ?? baseConfig.enforce_single_json;
                         document.getElementById('disable-worn-equipment').checked = importedConfig.disable_worn_equipment ?? baseConfig.disable_worn_equipment;
                         document.getElementById('input-delay').value = importedConfig.input_delay_for_radiance ?? baseConfig.input_delay_for_radiance;
                         document.getElementById('strip-emotes').checked = importedConfig.strip_emotes_from_output ?? baseConfig.strip_emotes_from_output;
                         document.getElementById('use-defeat').checked = importedConfig.use_defeat ?? baseConfig.use_defeat;
                         document.getElementById('realnames-support').checked = importedConfig.realnames_support ?? baseConfig.realnames_support;
-                        document.getElementById('chim-no-examples').checked = importedConfig.CHIM_NO_EXAMPLES ?? baseConfig.CHIM_NO_EXAMPLES;
+                        // document.getElementById('chim-no-examples').checked = importedConfig.CHIM_NO_EXAMPLES ?? baseConfig.CHIM_NO_EXAMPLES;
                         // Inventory settings
                         document.getElementById('inventory-items-limit').value = importedConfig.inventory_items_limit ?? baseConfig.inventory_items_limit;
                         document.getElementById('use-item-relevancy-scoring').checked = importedConfig.use_item_relevancy_scoring ?? baseConfig.use_item_relevancy_scoring;
@@ -3582,7 +3582,7 @@ Intimate: You are roleplaying as #PLAYER_NAME#. Respond naturally as your charac
                 'restrict-nonfollower-functions': 'restrict_nonfollower_functions',
                 'always-enable-functions': 'always_enable_functions',
                 'force-aiff-name': 'force_aiff_name_to_ingame_name',
-                'use-llm-fallback': 'use_llm_fallback',
+                // 'use-llm-fallback': 'use_llm_fallback',
                 'enforce-single-json': 'enforce_single_json',
                 'disable-worn-equipment': 'disable_worn_equipment',
                 'strip-emotes': 'strip_emotes_from_output',
@@ -3592,7 +3592,7 @@ Intimate: You are roleplaying as #PLAYER_NAME#. Respond naturally as your charac
                 'voicetype-fallbacks': 'voicetype_fallbacks',
                 'commands-to-purge': 'commands_to_purge',
                 'events-to-ignore': 'events_to_ignore',
-                'chim-no-examples': 'CHIM_NO_EXAMPLES',
+                //'chim-no-examples': 'CHIM_NO_EXAMPLES',
                 
                 // Inventory settings
                 'inventory-items-limit': 'inventory_items_limit',
@@ -3722,7 +3722,7 @@ Intimate: You are roleplaying as #PLAYER_NAME#. Respond naturally as your charac
                     'restrict-nonfollower-functions': 'restrict_nonfollower_functions',
                     'always-enable-functions': 'always_enable_functions',
                     'force-aiff-name': 'force_aiff_name_to_ingame_name',
-                    'use-llm-fallback': 'use_llm_fallback',
+                    // 'use-llm-fallback': 'use_llm_fallback',
                     'enforce-single-json': 'enforce_single_json',
                     'disable-worn-equipment': 'disable_worn_equipment',
                     'strip-emotes': 'strip_emotes_from_output',
@@ -3732,7 +3732,7 @@ Intimate: You are roleplaying as #PLAYER_NAME#. Respond naturally as your charac
                     'voicetype-fallbacks': 'voicetype_fallbacks',
                     'commands-to-purge': 'commands_to_purge',
                     'events-to-ignore': 'events_to_ignore',
-                    'chim-no-examples': 'CHIM_NO_EXAMPLES',
+                    //'chim-no-examples': 'CHIM_NO_EXAMPLES',
 
                     // Inventory settings
                     'inventory-items-limit': 'inventory_items_limit',
@@ -3866,6 +3866,7 @@ Intimate: You are roleplaying as #PLAYER_NAME#. Respond naturally as your charac
                 "personality": "Core Context",
                 "interaction": "Core Context",
                 "player_background": "Core Context",
+                "player_titles": "Core Context",
                 "current_task": "Core Context",
                 
                 // Environmental context
@@ -3891,7 +3892,8 @@ Intimate: You are roleplaying as #PLAYER_NAME#. Respond naturally as your charac
                 
                 // System prompt settings
                 "response_guidelines": "System Prompt Settings",
-                "verbal_emotions_expression": "System Prompt Settings",
+                "response_inference": "System Prompt Settings",
+                //"verbal_emo tions_expression": "System Prompt Settings",
                 "action_enforcement": "System Prompt Settings"
             };
             

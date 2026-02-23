@@ -289,6 +289,11 @@ class ContextBuilderRegistry {
      * @return string Sample system prompt content
      */
     private function buildSamplePrompt() {
+
+				$GLOBALS["target"] = GetTargetActor();
+				$GLOBALS["target_gender"] = GetGender($GLOBALS["target"]); //Is Female($GLOBALS["target"]) ? "female" : "male";
+				$GLOBALS["target_pronouns"] = GetActorPronouns($GLOBALS["target"]);
+
         $sample = "";
         $params = [
             'herika_name' => isset($GLOBALS["HERIKA_NAME"]) ? $GLOBALS["HERIKA_NAME"] : "Character",
@@ -334,6 +339,10 @@ function BuildSystemPrompt() {
     }
     
     // Access global variables needed for the system prompt
+		$GLOBALS["target"] = GetTargetActor();
+		$GLOBALS["target_gender"] = GetGender($GLOBALS["target"]); //Is Female($GLOBALS["target"]) ? "female" : "male";
+		$GLOBALS["target_pronouns"] = GetActorPronouns($GLOBALS["target"]);
+
     
     $prompt_head = isset($GLOBALS["PROMPT_HEAD"]) ? $GLOBALS["PROMPT_HEAD"] : "";
     $use_prompt_head_override = $GLOBALS['use_prompt_head_override'] ?? false;
@@ -644,42 +653,78 @@ function BuildSystemPrompt() {
     // background
     
     // Add guidance for the LLM on how to format responses
+    if (!isset($GLOBALS['minai_context']['response_inference'])) {
+        $GLOBALS['minai_context']['response_inference'] = true;
+    }
     if (!isset($GLOBALS['minai_context']['response_guidelines'])) {
         $GLOBALS['minai_context']['response_guidelines'] = true;
     }
-    if (($GLOBALS['minai_context']['response_guidelines']) && ($display_name != 'The Narrator')) {
+    if (($GLOBALS['minai_context']['response_inference']) && ($display_name != 'The Narrator')) {
+        // Atom of Thought reasoning mode:
+        //$b_aot = !(IsInScene($display_name) || IsEnabled($display_name, "inCombat")); // disable in sex scenes and in combat
+        $b_aot = (!IsInScene($display_name)); 
+        if ($b_aot) {
+            $s_infer = "<inference_instructions>
+# When you solve a problem: 
+## Preliminary check:
+- If the problem involve counting items, objects, words, letters, characters, you must think step by step before answering. 
+- If the problem state to solve a puzzle, before proceeding, you must quote every constraint or premise from the message word for word to confirm you are not dealing with a new variant of a known puzzle. 
+## Intermediate steps to solve the problem: 
+### A. Decompose the problem into atomic reasoning units.
+For each atom:
+1. State the logical component
+2. Validate independence
+3. Verify correctness
+### B. Synthesize atoms into your answer.
+## Final steps: 
+- Check your answer and try to find any weaknesses in your logic. 
+- Correct the flaws and revise your answer. 
+- Provide your final answer.
+</inference_instructions> 
 
-        $system_prompt .= "<response_guidelines>\n# Response Guidelines for {$display_name}\n";        
+";
+            $system_prompt .= $s_infer;
+        }
+    }
+
+    if (($GLOBALS['minai_context']['response_guidelines']) && ($display_name != 'The Narrator')) {
+       
+        $s_rg = "";
+        
+        $s_rg .= "<response_guidelines>\n# Response Guidelines for {$display_name}\n";        
         if ($is_diary_request) {
             // Special guidelines for diary entries
             if ($is_self_narrator) {
-                $system_prompt .= "- You are writing a diary entry as {$display_name}\n";
-                $system_prompt .= "- Write in first person perspective as {$display_name}, recording your personal reflections\n";
+                $s_rg .= "- You are writing a diary entry as {$display_name}\n";
+                $s_rg .= "- Write in first person perspective as {$display_name}, recording your personal reflections\n";
             } else {
-                $system_prompt .= "- You are writing a diary entry as {$display_name}\n";
-                $system_prompt .= "- Write in first person perspective, recording your thoughts and experiences\n";
+                $s_rg .= "- You are writing a diary entry as {$display_name}\n";
+                $s_rg .= "- Write in first person perspective, recording your thoughts and experiences\n";
             }
-            $system_prompt .= "- Include personal reflections on recent events and feelings\n";
-            $system_prompt .= "- The tone should be introspective and authentic to your character\n";
-            $system_prompt .= "- Reference recent experiences, observations, and emotions\n";
+            $s_rg .= "- Include personal reflections on recent events and feelings\n";
+            $s_rg .= "- The tone should be introspective and authentic to your character\n";
+            $s_rg .= "- Reference recent experiences, observations, and emotions\n";
         } else {
             // Standard response guidelines
-            $system_prompt .= "- Stay in character as {$display_name} at all times.\n";
-            $system_prompt .= "- Respond appropriately to the context of the conversation.\n";
-            $system_prompt .= "- Think carefully, the quality of your response is important.\n";
-            $system_prompt .= "- Prioritize responding to the most recent dialogue and events.\n";
-            $system_prompt .= "- Include variety in your responses and avoid repeating yourself.\n";
-            //$system_prompt .= "## When indicating a pause or trailing off in speech or suggesting an incomplete thought or idea, always use an ellipsis (...). Never replace the ellipsis with a dot. Example: 'their... distractions.' is correct, 'their. distractions.' is incorrect.\n";
+            $s_rg .= "- Stay in character as {$display_name} at all times.\n";
+            $s_rg .= "- Respond appropriately to the context of the conversation.\n";
+            $s_rg .= "- Prioritize responding to the most recent dialogue and events.\n";
+            $s_rg .= "- Include variety in your responses and avoid repeating yourself.\n";
+            if ($GLOBALS['minai_context']['response_inference'])
+                $s_rg .= "- Think carefully, follow <inference_instructions> when you have to solve problems, the quality of your response is important.\n";
+            else
+                $s_rg .= "- Think carefully, the quality of your response is important.\n";
+            //$s_rg .= "## When indicating a pause or trailing off in speech or suggesting an incomplete thought or idea, always use an ellipsis (...). Never replace the ellipsis with a dot. Example: 'their... distractions.' is correct, 'their. distractions.' is incorrect.\n";
 
             if ($GLOBALS['enforce_short_responses']) {
-                $system_prompt .= "- Be concise and direct in your responses.\n";
+                $s_rg .= "- Be concise and direct in your responses.\n";
             }
-            $system_prompt .= "- OoC (Out of Character) instructions are important and must be followed exactly. \n";
-            
-            $system_prompt .= "</response_guidelines>\n";
+            $s_rg .= "- OoC (Out of Character) instructions are important and must be followed exactly. \n";
+            $s_rg .= "</response_guidelines>\n";
             
         }
-
+        if (strlen($s_rg) > 0)
+            $system_prompt .= $s_rg;
     }
 
     if (!isset($GLOBALS['use_emotions_expression'])) {
@@ -729,11 +774,11 @@ function BuildSystemPrompt() {
                 $emo .= "Emotion intensity will raise gradually from low to Moderate and from Moderate to strong. \n";
                 $emo .= "\n";
                 $emo .= "## Examples: \n";
-                $emo .= "### Being angry: \n";
-                $emo .= "I can\'t believe thi... this! I... Damn it! You... you... enough! You lied to me! Every time... every fucking single time! By the Nines! I\'m... I\'m done!  \n";
+                $emo .= "<example>\n### Being angry: \n";
+                $emo .= "I can\'t believe thi... this! I... Damn it! You... you... enough! You lied to me! Every time... every fucking single time! By the Nines! I\'m... I\'m done! </example> \n";
                 $emo .= "\n";
-                $emo .= "### Being fearful:\n";
-                $emo .= "I think I hear... something. No, no... no! Gods... it\'s here! Don\'t... let it... I... um, can\'t breathe! By the Gods... \n";
+                $emo .= "<example>\n### Being fearful:\n";
+                $emo .= "I think I hear... something. No, no... no! Gods... it\'s here! Don\'t... let it... I... um, can\'t breathe! By the Gods...</example> \n";
                 $emo .= "\n";
                 
                 // save for later use
@@ -742,24 +787,36 @@ function BuildSystemPrompt() {
             $system_prompt .= $emo;
 
             if (!$GLOBALS["disable_nsfw"]) {
+                $ir = rand(0,2);
+ 
                 $s_aroused = "I can bar-barely... breathe. Damn... I can't stop thinking what would happen... Gods-if we just... ";
                 $b_aroused = (IsInScene($display_name) || ((!IsEnabled($display_name, "inCombat")) && (GetActorArousal($display_name) >= (0.85 * GetMinArousalForSex())))); 
                 if ($b_aroused) {
                     //error_log(" sys prompt prns $display_name $s_gender: " . print_r($prns,true) ); //debug
                     if ($s_gender == 'male') {
-                        $s_aroused = "I have an erect... erection. Suck my... my dick bitch! And... by The Nines! My cock's... damn... my... I can't stop... shit! Fuck... fuck... fuck!";
+                        if ($ir == 0)
+                            $s_aroused = "...this erection, Heavenly Dibella Tits... My cock's... damn... my... I can't stop!";
+                        elseif ($ir == 1) 
+                            $s_aroused = "Suck my... my dick bitch! Fuck... fuck... fuck!";
+                        elseif ($ir == 2) 
+                            $s_aroused = "I have an erect... erection. And... by The Nines! My cock's... I can't stop... shit!";
                     } elseif ($s_gender == 'female') { 
-                        $s_aroused = "Oh... you're so... so warm! I ca... can feel it. By The Nines... want it... it now! Fuck... I'm dripping. Damn...";
+                        if ($ir == 0)
+                            $s_aroused = "Oh... you're so... so warm! I want it... it now! I'm wet... damn.";
+                        elseif ($ir == 1) 
+                            $s_aroused = "I ca... can feel. I want it... now! Fuck... I'm dripping";
+                        elseif ($ir == 2) 
+                            $s_aroused = "By The Nines... want it... it now! I'm trembling, don't stop.";
                     } else {
                         $s_aroused = "My... my heart is racing. Damn... I'm... I'm trembling. Can't stop... if we just... Fuck!";
                     }
                 }
                 $s_example = "Being aroused, horny, desiring or in love: \n{$s_aroused}\n";
             } else {
-                $s_aroused = "Oh... I feel... for... for you. What I need... need you closer. I can't... I barely breathe. Damn... My... my heart is racing.";
+                $s_aroused = "Oh... I feel... for... for you. What I need... need you closer. I barely breathe, damn... My-my heart is racing.";
                 $s_example = "Being in love or desiring: \n{$s_aroused}\n";
             }
-            $system_prompt .= "\n\n### {$s_example}</emotions_expression>\n";
+            $system_prompt .= "\n<example>\n### {$s_example}</example></emotions_expression>\n";
         }
     }
 
@@ -768,7 +825,7 @@ function BuildSystemPrompt() {
     }
     if ($GLOBALS['minai_context']['action_enforcement']) {
         $GLOBALS["COMMAND_PROMPT"] = ""; // Kill don't narrate
-
+    }
         $b_func = false;
         $actionsList = "";
         if (isset($GLOBALS["PROMPT_ACTIONS_LIST"]) && !empty($GLOBALS["PROMPT_ACTIONS_LIST"])) { // CHIM version > 2.2.2 (in unstable branch now)
@@ -783,20 +840,22 @@ function BuildSystemPrompt() {
             if ($b_func) {
                 $system_prompt .= "\n<actions_usage_instructions>\n# ACTIONS USAGE INSTRUCTIONS\n";
                 $system_prompt .= " - This section defines available actions that {$display_name} can perform to interact with the world.\n";
-                $system_prompt .= " - {$display_name} will use these actions when they align with {$prns["possessive"]} intentions and the current situation.\n";
-                $system_prompt .= " - While 'Talk' is an available action for dialogue, prioritize other contextually appropriate actions when possible. \n";
-                $system_prompt .= "</actions_usage_instructions>";
+                $system_prompt .= " - {$display_name} will use these actions when they align with {$prns["possessive"]} intentions and the current context.\n";
+                //$system_prompt .= " - While 'Talk' is an available action for dialogue, prioritize other contextually appropriate actions when possible. \n";
                 
-                $system_prompt .= $actionsList;
+                $system_prompt .= str_ireplace(["Use if your character needs to perform an action:","\n\n\n"],["","\n"],$actionsList);
+
+                $system_prompt .= "\n</actions_usage_instructions>";
+                
+                
             } else {
                 error_log(" system_prompt_context: Warning missing functions list! "); //debug
             }
         }
-    }
-    else {
+    //} else {
         // Use defaults
         // no change required
-    }
+    //}
     
     // Process decorators
     minai_start_timer('expand_decorators', 'system_prompt_builder');

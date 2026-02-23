@@ -73,7 +73,7 @@ if ($pre_sexEnabled) {
     directRegisterAction(
         "ExtCmdRemoveClothes", 
         "RemoveClothes", 
-        "Take off all clothing and armor for intimate activities, unwinding, sleeping, swimming or just get naked to show off the beauty of your body", 
+        "Take off all clothing and armor before intimate activities, unwinding, sleeping, swimming or just get naked to show off the beauty of your body", 
         true
     );
 }
@@ -81,11 +81,16 @@ if ($pre_sexEnabled) {
 // If no sex actions are enabled, skip everything
 if (!$sexEnabled) {
     return;
-    //error_log("->sex not enabled: " . implode(' . ', $GLOBALS["ENABLED_FUNCTIONS"])); // debug
+    //error_log("->sex not enabled: " . implode(' . ', $GLOBALS["ENABLED_ FUNCTIONS"])); // debug
 
 }
 
 // COMMON SEX ACTIONS
+$i_rnd = rand(0,2);
+$b_sel1 = ($i_rnd == 0);
+$b_sel2 = ($i_rnd == 1);
+$b_sel3 = ($i_rnd == 2);
+
 if ($sexEnabled) {
     minai_start_timer('common_sex_actions', 'load_module_sex.php');
     
@@ -126,7 +131,7 @@ if ($sexEnabled) {
     directRegisterAction(
         "ExtCmdStartThreesome", 
         "StartThreesome", 
-        "Initiate sexual activity involving three persons simultaneously - use for three-person encounters as a very desirable intimate entertainment. Should chose a target partner as third person. Use this action when The Dragonborn is not involved in another intimate activity", 
+        "Initiate sexual activity involving three persons simultaneously - use for three-person encounters as a very desirable intimate entertainment. Should chose a target that is not having sex as third person. ", 
         true
     );
     
@@ -134,7 +139,7 @@ if ($sexEnabled) {
     directRegisterAction(
         "ExtCmdStartOrgy", 
         "StartOrgy", 
-        "Begin group sexual activity with multiple willing participants in the vicinity in groups up to five participants. Should chose 2 or 3 extra partners that are not already involved in intimate activities as targets. Ultimate group bonding intimate activity", 
+        "Begin group sexual activity with multiple willing participants in the vicinity in groups up to five participants. Should chose 2 or 3 extra partners that are not already having sex as targets. Ultimate group bonding intimate activity", 
         true
     );
 
@@ -145,7 +150,8 @@ if ($sexEnabled) {
         "ExtCmdStartCuddleSex", 
         "StartCuddleSex", 
         "Begin intimate, gentle sex with close body contact - emphasizes emotional connection", 
-        true
+        //true
+        $b_sel1
     );
     
     // StartKissingSex
@@ -153,7 +159,17 @@ if ($sexEnabled) {
         "ExtCmdStartKissingSex", 
         "StartKissingSex", 
         "Begin passionate kissing as foreplay or during sex - builds intimacy and arousal", 
-        true
+        //true
+        $b_sel2
+    );
+
+    // Start69Sex
+    directRegisterAction(
+        "ExtCmdStart69Sex", 
+        "Start69Sex", 
+        "Begin mutual oral sex simultaneously - provides pleasure to both partners", 
+        //true,
+        $b_sel3
     );
 
     // StartMissionarySex
@@ -161,27 +177,21 @@ if ($sexEnabled) {
         "ExtCmdStartMissionarySex", 
         "StartMissionarySex", 
         "Begin face-to-face sex with partner on back - the most common position", 
-        true,
+        //true,
+        $b_sel1,
         [
             "male-female" => "Begin face-to-face sex with #target_object# on #target_possessive# back - the most common position",
             "female-male" => "Begin face-to-face sex with #target_object# on #target_possessive# back - the most common position"
         ]
     );
     
-    // Start69Sex
-    directRegisterAction(
-        "ExtCmdStart69Sex", 
-        "Start69Sex", 
-        "Begin mutual oral sex simultaneously - provides pleasure to both partners", 
-        true
-    );
-
     // StartCowgirlSex
     directRegisterAction(
         "ExtCmdStartCowgirlSex", 
         "StartCowgirlSex", 
         "Begin sex with partner on top, facing forward - gives them control", 
-        true,
+        //true,
+        $b_sel2,
         [
             "male-female" => "Begin sex with #target_object# on top, facing forward - gives #target_object# control",
             "female-male" => "Begin sex with you on top of #target_object#, facing forward - gives you control"
@@ -193,7 +203,8 @@ if ($sexEnabled) {
         "ExtCmdStartReverseCowgirl", 
         "StartReverseCowgirl", 
         "Begin sex with partner on top, facing away - a visually exciting position", 
-        true,
+        //true,
+        $b_sel3,
         [
             "male-female" => "Begin sex with #target_object# on top, facing away from you - a visually exciting position",
             "female-male" => "Begin sex with you on top, facing away from #target_object# - a visually exciting position"
@@ -205,7 +216,8 @@ if ($sexEnabled) {
         "ExtCmdStartDoggystyle", 
         "StartDoggystyle", 
         "Begin sex from behind with partner on hands and knees - allows deep penetration", 
-        true,
+        //true,
+        $b_sel1,
         [
             "male-female" => "Begin sex from behind with #target_object# on hands and knees - allows deep penetration",
             "female-male" => "Begin sex with #target_object# entering you from behind while you're on hands and knees"
@@ -217,7 +229,8 @@ if ($sexEnabled) {
         "ExtCmdStartFacesitting", 
         "StartFacesitting", 
         "Begin oral sex with partner sitting on your face - demonstrates submission or dominance", 
-        true,
+        //true,
+        $b_sel2,
         [
             "male-female" => "Begin oral sex with #target_object# sitting on your face",
             "female-male" => "Begin oral sex by sitting on #target_possessive# face"
@@ -330,7 +343,101 @@ if ($activeSexEnabled) {
         "Perform oral stimulation of the anus - an intimate and taboo act", 
         true
     );
+
+    // -----------------------------------------
+
+    // StartCuddleSex
+    directRegisterAction(
+        "ExtCmdStartCuddleSex", 
+        "StartCuddleSex", 
+        "Begin intimate, gentle sex with close body contact - emphasizes emotional connection", 
+        //true
+        $b_sel1
+    );
     
+    // StartKissingSex
+    directRegisterAction(
+        "ExtCmdStartKissingSex", 
+        "StartKissingSex", 
+        "Begin passionate kissing as foreplay or during sex - builds intimacy and arousal", 
+        //true
+        $b_sel2
+    );
+
+    // Start69Sex
+    directRegisterAction(
+        "ExtCmdStart69Sex", 
+        "Start69Sex", 
+        "Begin mutual oral sex simultaneously - provides pleasure to both partners", 
+        //true
+        $b_sel3
+    );
+
+    // StartMissionarySex
+    directRegisterAction(
+        "ExtCmdStartMissionarySex", 
+        "StartMissionarySex", 
+        "Begin face-to-face sex with partner on back - the most common position", 
+        //true,
+        $b_sel1,
+        [
+            "male-female" => "Begin face-to-face sex with #target_object# on #target_possessive# back - the most common position",
+            "female-male" => "Begin face-to-face sex with #target_object# on #target_possessive# back - the most common position"
+        ]
+    );
+    
+    // StartCowgirlSex
+    directRegisterAction(
+        "ExtCmdStartCowgirlSex", 
+        "StartCowgirlSex", 
+        "Begin sex with partner on top, facing forward - gives them control", 
+        //true,
+        $b_sel2,
+        [
+            "male-female" => "Begin sex with #target_object# on top, facing forward - gives #target_object# control",
+            "female-male" => "Begin sex with you on top of #target_object#, facing forward - gives you control"
+        ]
+    );
+    
+    // StartReverseCowgirl
+    directRegisterAction(
+        "ExtCmdStartReverseCowgirl", 
+        "StartReverseCowgirl", 
+        "Begin sex with partner on top, facing away - a visually exciting position", 
+        //true,
+        $b_sel3,
+        [
+            "male-female" => "Begin sex with #target_object# on top, facing away from you - a visually exciting position",
+            "female-male" => "Begin sex with you on top, facing away from #target_object# - a visually exciting position"
+        ]
+    );
+    
+    // StartDoggystyle
+    directRegisterAction(
+        "ExtCmdStartDoggystyle", 
+        "StartDoggystyle", 
+        "Begin sex from behind with partner on hands and knees - allows deep penetration", 
+        //true,
+        $b_sel1,
+        [
+            "male-female" => "Begin sex from behind with #target_object# on hands and knees - allows deep penetration",
+            "female-male" => "Begin sex with #target_object# entering you from behind while you're on hands and knees"
+        ]
+    );
+    
+    // StartFacesitting
+    directRegisterAction(
+        "ExtCmdStartFacesitting", 
+        "StartFacesitting", 
+        "Begin oral sex with partner sitting on your face - demonstrates submission or dominance", 
+        //true,
+        $b_sel2,
+        [
+            "male-female" => "Begin oral sex with #target_object# sitting on your face",
+            "female-male" => "Begin oral sex by sitting on #target_possessive# face"
+        ]
+    );
+
     // -----------------------------------------
     
     // EndSex

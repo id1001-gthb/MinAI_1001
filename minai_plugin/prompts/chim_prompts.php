@@ -10,12 +10,12 @@ $DEFAULT_TEMPLATE_DIALOG = $GLOBALS["TEMPLATE_DIALOG"]; // copy of default templ
 
 $MY_TEMPLATE_DIALOG = $DEFAULT_TEMPLATE_DIALOG; // use default or adjust at will
 
-$MY_TEMPLATE_DIALOG_ASK = " {$HERIKA} must intervene in the conversation by asking a question. {$MY_TEMPLATE_DIALOG}"; 
+$MY_TEMPLATE_DIALOG_ASK = " <instruction>{$HERIKA} is asking a question.</instruction> {$MY_TEMPLATE_DIALOG}"; 
 
 // template dialog modifiers:
-$MY_TEMPLATE_DIALOG_TELLING = " \n{$HERIKA} will tell an engaging suspense-full story with a plot twist. "; 
-$MY_TEMPLATE_DIALOG_FICTION  = " \n{$HERIKA} will imagine a creative fictional narrative. "; 
-$MY_TEMPLATE_DIALOG_STORY = " \n{$HERIKA} will imagine a creative fictional engaging suspense-full story with unexpected conclusion. "; 
+$MY_TEMPLATE_DIALOG_TELLING = " \n<instruction>{$HERIKA} will tell an engaging suspense-full story with a plot twist.</instruction> "; 
+$MY_TEMPLATE_DIALOG_FICTION  = " \n<instruction>{$HERIKA} will imagine a creative fictional narrative.</instruction> "; 
+$MY_TEMPLATE_DIALOG_STORY = " \n<instruction>{$HERIKA} will imagine a creative fictional engaging suspense-full story with unexpected conclusion.</instruction> "; 
 
 // template additions, don't use contradicting styles for same cue:
 $STORY_STYLE_LORE = " \nStrictly adhere to Skyrim lore. ";
@@ -38,7 +38,7 @@ $STORY_STYLE_VOCAB_SIMPLE = " \nUse simple mundane vocabulary. ";
 $STORY_STYLE_VOCAB_COMPLEX = " \nUse complex elevated vocabulary. "; 
 
 $USE_NSFW = (!($GLOBALS["disable_nsfw"] ?? false));
-$SEX_ENABLED = ShouldEnableSexFunctions($HERIKA);
+//$SEX_ENABLED = ShouldEnableSexFunctions($HERIKA);
 	
 $herika_gender = GetGender($HERIKA);
 $herika_prns = GetActorPronouns($HERIKA);
@@ -52,7 +52,7 @@ $player_his = $player_prns['possessive'];
 
 
 //---------------------------------------------------------------------
-
+//error_log("{$HERIKA} USE_NSFW={$USE_NSFW} - exec trace "); // debug
 //---------------------------------------------------------------------
 // CHIM bored events:
 //---------------------------------------------------------------------
@@ -631,12 +631,12 @@ error_log(" bored r=$i_rnd b=$i_bored dontuse=".((!$b_use) ? "Y" : "N")); // deb
 
 //} //-- end if BORED SERVERSIDE
 
-$i_random = rand(1, 5); // 1/n probability
+$i_random = rand(1, 4); // 1/n probability
 if ($i_random == 1)
 	$GLOBALS["PROMPTS"]["bored"]["cue"] = array_merge($GLOBALS["PROMPTS"]["bored"]["cue"], $more_cues); 
 
 // sometime add bored cues to MinAI radiant for variety:
-$i_random = rand(1, 5); // 1/n probability
+$i_random = rand(1, 4); // 1/n probability
 if ($i_random == 1)
 	$GLOBALS["PROMPTS"]["radiant"]["cue"] = array_merge($GLOBALS["PROMPTS"]["radiant"]["cue"], $more_cues); 
 
@@ -787,7 +787,7 @@ if (isset($GLOBALS["gameRequest"]) && in_array(strtolower($GLOBALS["gameRequest"
 		"(Dialogue or action turn for {$HERIKA}. Focus speech and/or action only on one actor.) {$DEFAULT_TEMPLATE_DIALOG}"
 	);
 
-	$i_random = rand(1, 16); // to lower the probability of some cues
+	$i_random = rand(1, 9); // to lower the probability of some cues
 	if ($i_random == 1) {
 		array_push($GLOBALS["PROMPTS"]["rechat"]["cue"],
 			//----------------- story
@@ -810,10 +810,6 @@ array_push($GLOBALS["PROMPTS"]["lockpicked"]["cue"],
 	"({$HERIKA} comments {$PLAYER}'s skill in lockpicking expressing concern about how such a skill was achieved) {$MY_TEMPLATE_DIALOG}",
 	"({$HERIKA} asks {$PLAYER} how lockpicking skill was achieved) {$MY_TEMPLATE_DIALOG_ASK}",
 	"({$HERIKA} admires {$PLAYER}'s skill in lockpicking and ask how to learn the skill) {$MY_TEMPLATE_DIALOG}",
-	"({$HERIKA} asks {$PLAYER} if lockpicking skill can be applied in intimate activities) {$MY_TEMPLATE_DIALOG_ASK}",
-	"({$HERIKA} admires {$PLAYER}'s skill in lockpicking and compare it with sexual activity related skill) {$MY_TEMPLATE_DIALOG}",
-	"({$HERIKA} admires {$PLAYER}'s skill in lockpicking and compare it with a skillful prelude) {$MY_TEMPLATE_DIALOG}",
-	"({$HERIKA} admires {$PLAYER}'s skill in lockpicking as an arousal factor) {$MY_TEMPLATE_DIALOG}",
 	"({$HERIKA} admires {$PLAYER}'s skill in lockpicking and ask if personal diary is safe from peeking) {$MY_TEMPLATE_DIALOG}",
 	"({$HERIKA} tells {$PLAYER} a short story about a thief) {$MY_TEMPLATE_DIALOG}",
 	"({$HERIKA} comments about one valuable item found) {$MY_TEMPLATE_DIALOG}",
@@ -823,6 +819,19 @@ array_push($GLOBALS["PROMPTS"]["lockpicked"]["cue"],
 	"({$HERIKA} thanks {$PLAYER} for always sharing the loot) {$MY_TEMPLATE_DIALOG}"
 ); 
 
+if ($USE_NSFW) {
+	$i_random = rand(1, 3); // to lower the probability of some cues
+	if ($i_random == 1) {
+		array_push($GLOBALS["PROMPTS"]["lockpicked"]["cue"],
+			"({$HERIKA} asks {$PLAYER} if lockpicking skill can be applied in intimate activities) {$MY_TEMPLATE_DIALOG_ASK}",
+			"({$HERIKA} asks {$PLAYER} if lockpicking skill was acquired in intimate activities) {$MY_TEMPLATE_DIALOG_ASK}",
+			"({$HERIKA} admires {$PLAYER}'s skill in lockpicking and compare it with sexual activity related skill) {$MY_TEMPLATE_DIALOG}",
+			"({$HERIKA} admires {$PLAYER}'s skill in lockpicking and compare it with a skillful sex prelude) {$MY_TEMPLATE_DIALOG}",
+			"({$HERIKA} admires {$PLAYER}'s skill in lockpicking as an arousal factor) {$MY_TEMPLATE_DIALOG}"
+		);
+	}
+}
+		
 array_push($GLOBALS["PROMPTS"]["combatend"]["cue"],
 	"({$HERIKA} comments about the weapon used in combat) {$MY_TEMPLATE_DIALOG }",
 	"({$HERIKA} compares the weapon they used in combat with other weapons) {$MY_TEMPLATE_DIALOG}",

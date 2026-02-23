@@ -6,6 +6,8 @@
 //    return;
 //}
 
+//error_log("-- prompts -- ");
+
 minai_start_timer("prompts_php", "MinAI");
 
 include("config.php");
@@ -27,7 +29,7 @@ ProcessIntegrations();
 $cleanedMessage = GetCleanedMessage();
 $enforceLength = "You MUST Respond with no more than two sentences.";
 
-$i_random = rand(1, 20); // to lower the probability of some cues
+$i_random = rand(1, 12); // to lower the probability of some cues
 
 $GLOBALS["PROMPTS"]["radiant"] = [
     "cue"=>[
@@ -44,7 +46,7 @@ $GLOBALS["PROMPTS"]["radiant"] = [
     ]
 ];
 
-if ($i_random == 7) {
+if ($i_random == 1) {
     array_push($GLOBALS["PROMPTS"]["radiant"]["cue"],
 		"({$GLOBALS["HERIKA_NAME"]} tell a story related to a relevant topic mentioned in DIALOGUE HISTORY and RECENT EVENTS.) {$GLOBALS["TEMPLATE_DIALOG"]}",
 		"({$GLOBALS["HERIKA_NAME"]} tell a joke related to a relevant topic mentioned in DIALOGUE HISTORY and RECENT EVENTS.) {$GLOBALS["TEMPLATE_DIALOG"]}",
@@ -56,9 +58,9 @@ $GLOBALS["PROMPTS"]["minai_force_rechat"] = [
     "cue"=>[
         "({$GLOBALS["HERIKA_NAME"]} responds to {$GLOBALS["target"]}.) {$GLOBALS["TEMPLATE_DIALOG"]}",
 		//-----------------
-		"({$GLOBALS["HERIKA_NAME"]} answers {$GLOBALS["target"]}. {$GLOBALS["HERIKA_NAME"]} share a related fact or piece of knowledge.) {$GLOBALS["TEMPLATE_DIALOG"]}",
+		"({$GLOBALS["HERIKA_NAME"]} speak to {$GLOBALS["target"]}. {$GLOBALS["HERIKA_NAME"]} share a related fact or piece of knowledge.) {$GLOBALS["TEMPLATE_DIALOG"]}",
 		"({$GLOBALS["HERIKA_NAME"]} reacts to {$GLOBALS["target"]}. {$GLOBALS["HERIKA_NAME"]} ask the interlocutor to elaborate further.) {$GLOBALS["TEMPLATE_DIALOG"]}",
-		"({$GLOBALS["HERIKA_NAME"]} answers {$GLOBALS["target"]}. {$GLOBALS["HERIKA_NAME"]} challenge interlocutor viewpoint.) {$GLOBALS["TEMPLATE_DIALOG"]}",
+		"({$GLOBALS["HERIKA_NAME"]} speak to {$GLOBALS["target"]}. {$GLOBALS["HERIKA_NAME"]} challenge interlocutor viewpoint.) {$GLOBALS["TEMPLATE_DIALOG"]}",
 		"({$GLOBALS["HERIKA_NAME"]} replies to {$GLOBALS["target"]}. {$GLOBALS["HERIKA_NAME"]} expresses curiosity about the current topic.) {$GLOBALS["TEMPLATE_DIALOG"]}",
 		"({$GLOBALS["HERIKA_NAME"]} replies to {$GLOBALS["target"]}. {$GLOBALS["HERIKA_NAME"]} summarize the key points of the discussion.) {$GLOBALS["TEMPLATE_DIALOG"]}",
 		"({$GLOBALS["HERIKA_NAME"]} replies to {$GLOBALS["target"]}. {$GLOBALS["HERIKA_NAME"]} add their insights to the conversation.) {$GLOBALS["TEMPLATE_DIALOG"]}",
@@ -82,9 +84,9 @@ $GLOBALS["PROMPTS"]["minai_force_rechat"] = [
 		//----------------- antagonistic 
 		"({$GLOBALS["HERIKA_NAME"]} replies to {$GLOBALS["target"]}. {$GLOBALS["HERIKA_NAME"]} doubt about what was said.) {$GLOBALS["TEMPLATE_DIALOG"]}",
 		"({$GLOBALS["HERIKA_NAME"]} replies to {$GLOBALS["target"]}. {$GLOBALS["HERIKA_NAME"]} contradict the interlocutor.) {$GLOBALS["TEMPLATE_DIALOG"]}",
-		"({$GLOBALS["HERIKA_NAME"]} answers {$GLOBALS["target"]}. {$GLOBALS["HERIKA_NAME"]} mock the interlocutor.) {$GLOBALS["TEMPLATE_DIALOG"]}",
-		"({$GLOBALS["HERIKA_NAME"]} answers {$GLOBALS["target"]}. {$GLOBALS["HERIKA_NAME"]} deride the interlocutor's opinion.) {$GLOBALS["TEMPLATE_DIALOG"]}",
-		"({$GLOBALS["HERIKA_NAME"]} answers {$GLOBALS["target"]}. {$GLOBALS["HERIKA_NAME"]} show disdain for the interlocutor's opinion.) {$GLOBALS["TEMPLATE_DIALOG"]}",
+		"({$GLOBALS["HERIKA_NAME"]} speak to {$GLOBALS["target"]}. {$GLOBALS["HERIKA_NAME"]} mock the interlocutor.) {$GLOBALS["TEMPLATE_DIALOG"]}",
+		"({$GLOBALS["HERIKA_NAME"]} replies to {$GLOBALS["target"]}. {$GLOBALS["HERIKA_NAME"]} deride the interlocutor's opinion.) {$GLOBALS["TEMPLATE_DIALOG"]}",
+		"({$GLOBALS["HERIKA_NAME"]} speak to {$GLOBALS["target"]}. {$GLOBALS["HERIKA_NAME"]} show disdain for the interlocutor's opinion.) {$GLOBALS["TEMPLATE_DIALOG"]}",
 		//-----------------
         "({$GLOBALS["HERIKA_NAME"]} is talking to {$GLOBALS["target"]}.) {$GLOBALS["TEMPLATE_DIALOG"]}  " //
     ],
@@ -93,7 +95,7 @@ $GLOBALS["PROMPTS"]["minai_force_rechat"] = [
     ]
 ];
 
-if (($i_random == 11) || ($i_random == 17)) {
+if (($i_random == 3) || ($i_random == 7)) {
     array_push($GLOBALS["PROMPTS"]["minai_force_rechat"]["cue"],
 		//----------------- story
 		"({$GLOBALS["HERIKA_NAME"]} replies to {$GLOBALS["target"]}. {$GLOBALS["HERIKA_NAME"]} tell a story related to the current topic.) {$GLOBALS["TEMPLATE_DIALOG"]}",

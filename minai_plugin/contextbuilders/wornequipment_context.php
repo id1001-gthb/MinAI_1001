@@ -578,7 +578,7 @@ function ProcessEquipment($actorName)
     if (isset($GLOBALS['equipment_cache'][$actorName]) && $GLOBALS['equipment_cache'][$actorName] !== false) {
       $parsedEquipment = $GLOBALS['equipment_cache'][$actorName]['parsed'];
     } else {
-      $encodedString = GetActorValue($actorName, "AllWornEquipment");
+      $encodedString = GetActorValue($actorName, "AllWornEquipment", true);
       $parsedEquipment = ParseEncodedEquipmentData($encodedString);
       
       // Cache the parsed data

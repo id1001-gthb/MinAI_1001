@@ -95,7 +95,7 @@ function getScene($actor, $threadId = null) {
     } else if (!$sceneDesc) {
         // Original fallback description for consensual scenes
         $sceneDesc = "A sex scene is actively taking place. ";
-        $sceneDesc .= "These participants are currently engaged in sex in the scene: " . implode(", ", $allActors) . ".\n";
+        $sceneDesc .= "These participants are currently engaged in sex in the scene: <scene_participants_having_sex>" . implode(", ", $allActors) . "</scene_participants_having_sex>.\n";
         if ($scene["fallback"]) {
             $sceneDesc .= $scene["fallback"];
         }
@@ -141,16 +141,14 @@ function addXPersonality($jsonXPersonality) {
     $orient = ($jsonXPersonality["orientation"] ?? "heterosexual");
     $relStyle = ($jsonXPersonality["relationshipStyle"] ?? "open relationship");
     
-    $GLOBALS["HERIKA_PERS"] .= "
-- Sexual orientation: {$orient}
-- Romantic relationship type: {$relStyle}";
+    $GLOBALS["HERIKA_SEX_PERSONALITY"] = "### Sexual orientation: <sexual_orientation>{$GLOBALS["HERIKA_NAME"]} is {$orient}</sexual_orientation>\n### Romantic relationship type: {$relStyle}";
 
     if(IsSexActiveSpeaker()) {
 
         $sex_howto = "";
         
         if (isset($jsonXPersonality["speakStyleDuringSex"]) && (strlen($jsonXPersonality["speakStyleDuringSex"]) > 0))
-            $sex_howto .= strip_tags("\n - speaks in this style: " . ($jsonXPersonality["speakStyleDuringSex"] ?? "playful banter" ));
+            $sex_howto .= "\n - speaks in this style: <speech_style>" . strip_tags($jsonXPersonality["speakStyleDuringSex"] ?? "playful banter" ) ."</speech_style> ";
         
         if (isset($jsonXPersonality["preferredSexPositions"]) && (count($jsonXPersonality["preferredSexPositions"]) > 0))
             $sex_howto .= strip_tags("\n - prefers these positions: " . implode(", ", $jsonXPersonality["preferredSexPositions"]));
@@ -165,7 +163,7 @@ function addXPersonality($jsonXPersonality) {
             $sex_howto .= strip_tags("\n - act like this: " . implode(", ", $jsonXPersonality["sexPersonalityTraits"]));
         
         if (strlen($sex_howto) > 0)
-            $GLOBALS["HERIKA_PERS"] .= "\n<response_guidelines><personality_sexual_behavior>\n## When having sex {$GLOBALS["HERIKA_NAME"]}: {$sex_howto}\n</personality_sexual_behavior></response_guidelines>\n";
+            $GLOBALS["HERIKA_SEX_PERSONALITY"] .= "\n### When having sex {$GLOBALS["HERIKA_NAME"]}: {$sex_howto}\n";
     }
 }
 
@@ -297,14 +295,14 @@ function randomize_speak_style($HerikaName, $arr_speakStyle, $max_random=100) {
             if (($s_speakStyle == "submissive talk") || ($s_speakStyle == "sweet talk") || ($s_speakStyle == "breathless gasps")) { // chance to be victim
                 $arr_res = ["style" => "victim talk", "role" => "victim"];
                 $isVictim = true;
-                error_log("randomized, $HerikaName is victim - exec trace "); // debug
+                //error_log("nc act, $HerikaName is victim - exec trace "); // debug
             }
         }
 
         if ((!$isVictim) && ($a_rnd < 2)) {
             if (($s_speakStyle == "dominant talk") || ($s_speakStyle == "breathless gasps")) { // chance of aggression
                 $arr_res = ["style" => "aggressor talk", "role" => "aggressor"];
-                error_log("randomized, $HerikaName is aggressor - exec trace "); // debug
+                //error_log("nc act, $HerikaName is aggressor - exec trace "); // debug
             }
         }
     }

@@ -1,0 +1,2 @@
+        // MinAI prompts are breaking rechat actor adressing "Respond to #target# as #herika_name#"
+        $GLOBALS['action_prompts']=[];

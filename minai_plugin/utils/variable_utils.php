@@ -67,6 +67,10 @@ function replaceVariables($content, $replacements, $depth = 0) {
 function ExpandPromptVariables($prompt) {
     // Get pronouns for target, Herika, and player (sometime globals are not ok)
     //$targetPronouns = $GLOBALS["target_pronouns"];
+		$GLOBALS["target"] = GetTargetActor();
+		$GLOBALS["target_gender"] = GetGender($GLOBALS["target"]); //Is Female($GLOBALS["target"]) ? "female" : "male";
+		//$GLOBALS["target_pronouns"] = GetActorPronouns($GLOBALS["target"]);
+
     $targetPronouns = GetActorPronouns($GLOBALS["target"]);
     //$herikaPronouns = $GLOBALS["herika_pronouns"];
     $herikaPronouns = GetActorPronouns($GLOBALS["HERIKA_NAME"]);

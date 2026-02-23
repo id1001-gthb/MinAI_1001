@@ -69,9 +69,11 @@ class Utilities {
         $beingsInCloseRange = str_replace("(", "", $beingsInCloseRange);
         $beingsList = explode("|",$beingsInCloseRange);
         if (empty($beingsList)) {
-            $nearbyActors = GetActorValue($GLOBALS["PLAYER_NAME"], "nearbyActors");
+            //$nearbyActors = GetActorValue($GLOBALS["PLAYER_NAME"], "nearbyActors");
+            $nearbyActors = GetActorValue("PLAYER", "nearbyActors", true);
             if (!empty($nearbyActors)) {
-                $beingsList = explode("|", $nearbyActors);
+                //$beingsList = explode("|", $nearbyActors);
+                $beingsList = explode(",", $nearbyActors);
             }
         }
         $count = 0;

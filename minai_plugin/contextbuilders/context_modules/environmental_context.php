@@ -23,7 +23,7 @@ require_once("/var/www/html/HerikaServer/ext/minai_plugin/contextbuilders/contex
  * @param array $required List of required parameter keys
  * @return array Validated and sanitized parameters with fallbacks if needed
  */
-function ValidateEnvironmentParams($params, $required = ['herika_name', 'player_name', 'target']) {
+function ValidateEnvironmentParams($params, $required = ["herika_name", "player_name", "target"]) {
     $validated = [];
     
     // Check for required parameters
@@ -33,13 +33,13 @@ function ValidateEnvironmentParams($params, $required = ['herika_name', 'player_
         } else {
             // Try to use globals as fallback
             switch ($key) {
-                case 'herika_name':
+                case "herika_name":
                     $validated[$key] = isset($GLOBALS["HERIKA_NAME"]) ? $GLOBALS["HERIKA_NAME"] : "";
                     break;
-                case 'player_name':
+                case "player_name":
                     $validated[$key] = isset($GLOBALS["PLAYER_NAME"]) ? $GLOBALS["PLAYER_NAME"] : "";
                     break;
-                case 'target':
+                case "target":
                     $validated[$key] = isset($GLOBALS["HERIKA_TARGET"]) ? 
                                       $GLOBALS["HERIKA_TARGET"] : 
                                       (isset($validated['player_name']) ? $validated['player_name'] : "");
@@ -57,7 +57,7 @@ function ValidateEnvironmentParams($params, $required = ['herika_name', 'player_
         }
     }
     
-    if (($params['target'] == strtolower($params['target'])) || 
+    if (($params["target"] == strtolower($params["target"])) || 
         ($params['herika_name'] == strtolower($params['herika_name'])) || 
         ($params['player_name'] == strtolower($params['player_name'])) ) { // debug   
         error_log(" WARNING params: " . print_r($params, true) ." validated: " . print_r($validated, true) );    
@@ -207,7 +207,7 @@ function BuildWeatherContext($params) {
  */
 function BuildMoonPhaseContext($params) {
     $params = ValidateEnvironmentParams($params);
-    $character = $params['target'];
+    $character = $params["target"];
     $utilities = new Utilities();
     
     // Get raw moon data
@@ -365,8 +365,8 @@ function GetLocationKeywordDescription($keyword) {
 
         // cleared status
         'location_clearable' => 'a location with possible enemy presence that needs to be cleared',
-        'location_iscleared' => 'now has <safe_location>safe location status where most or all enemies have been annihilated</safe_location>', 
-        'location_notcleared' => 'classified as a <unsafe_location>dangerous location where you have to be prepared for combat, enemies are nearby</unsafe_location>',
+        'location_iscleared' => '<safe_location>classified now as a safe location where most or all enemies have been annihilated</safe_location>', 
+        'location_notcleared' => '<unsafe_location>classified as a dangerous location where you have to be prepared for combat, enemies are nearby</unsafe_location>',
         
         // Navigation
         'lighthouse' => 'a coastal navigation aid'
@@ -420,6 +420,7 @@ function BuildLocationContext($params) {
     if ($hasLocation) {
         //error_log(" BuildLocationContext _{$currentLocation}_"); //debug
         $s_loc_extra = GetLocationDetails($currentLocation);
+        if ($currentLocation == "MIas Palace") $currentLocation = "Mia's Palace";
         if (strlen($s_loc_extra) > 0) {
             $context .= "Current Location: " . $currentLocation . ", " . $s_loc_extra . ".\n";
         } else {
@@ -462,7 +463,7 @@ function BuildLocationContext($params) {
  */
 function BuildFrostfallContext($params) {
     $params = ValidateEnvironmentParams($params);
-    $character = $params['target'];
+    $character = $params["target"];
     $utilities = new Utilities();
     
     if (!IsEnabled($character, "hasFrostfall")) {
@@ -532,13 +533,46 @@ function BuildNearbyCharactersContext($params) {
     $params = ValidateEnvironmentParams($params);
     $herika_name = $params['herika_name'];
     $player_name = $params['player_name'];
-    $target = $params['target'];
+    $target = $params["target"];
+    
     if ($herika_name == "The Narrator") {
         $herika_name = $player_name;
     }
-    $localActors = DataBeingsInRange();
+    $localActors = DataBeingsInRange2();
+    $b_empyt1 = (empty($localActors));
     
-    if (empty($localActors)) {
+    // add missing companions
+    $arr_party2 = GetCurrentPartyMembers();
+    if (count($arr_party2['names']) > 0) {
+        $arr_party = $arr_party2['names'];
+        $b_empyt2 = false;
+        //error_log("party2: ".print_r($arr_party2,true)); // debug
+        //error_log("party: ".print_r($arr_party,true)); // debug
+/*
+    foreach ($partyInfo['names'] as $memberName) {
+        if (strtolower($memberName) === strtolower($characterName)) {
+            return true;
+        }
+    }
+
+ --- GLOBALS[CACHE_PEOPLE] 
+|Lydia|Anja Iceheart|Sofie|Helen|Derkeethus|Thonar Silver-Blood|Sylgja|Ogol|Jorunn|Medea|Annekke Crag-Jumper|
+Jeanine|Celestine|Felicia|Moon River|Juniper|Herika|Kelsa Iceheart|
+Falmer Slave Nymph (hostile)|Alva|Sceolang|Falmer Slave Nymph (hostile)|
+Hercules the Dog|Golldir|Falmer Slave Nymph (hostile)|Daphnne|Charlotte|Akomi|Camilla Valerius|Carrot|Faendal|Ina|Lucifer|Serana|Falmer Slave Nymph (hostile)|Aeter| [string] 
+
+
+*/        
+        
+    } else  {
+        $arr_party = [];
+        $b_empyt2 = true;
+        //error_log("[environmental_context] crt party is empty. ".__FILE__." ".__LINE__); // debug 
+    }
+    
+    
+    if ($b_empyt1 && $b_empyt2) {
+        error_log("[environmental_context] party is empty (both). ".__FILE__." ".__LINE__); // debug 
         return "";
     }
     
@@ -548,14 +582,32 @@ function BuildNearbyCharactersContext($params) {
         return !empty($item);
     });
 
+    $ic1 = count($characters);
+    $ic2 = count($arr_party);
+    
     // Ensure herika_name, player_name and target are included without duplicates
+    if (!$b_empyt2)
+        $characters = array_unique_caseinsensitive(array_merge($characters, $arr_party));
+
     $characters = array_unique_caseinsensitive(array_merge($characters, array_filter([$herika_name, $player_name, $target])));
+
+    
+            
     // Remove parentheses from character names
     $characters = array_map(function($name) {
         return trim(trim($name, '()'));
     }, $characters);
 
+    $characters = array_filter(array_map('trim', $characters), function($item) {
+        return !empty($item);
+    });
+
+    $ic3 = count($characters);
+    //error_log("[environmental_context] nearby: $ic1 $ic2 $ic3 ".print_r($characters,true)." - debug ".__FILE__." ".__LINE__); // debug 
+    /*
+    */
     $is_nsfw = !($GLOBALS['disable_nsfw'] ?? true);
+    
     // If we have characters after cleaning, create the formatted list
     if (count($characters) > 0) {
         // Define attributes to fetch in batch - use lowercase for array keys
@@ -569,11 +621,14 @@ function BuildNearbyCharactersContext($params) {
         $contextLines = [];
         
         foreach ($characters as $character) {
+            if (strlen(trim($character))<1) continue;
             $charKey = strtolower($character);
             $line = $character;
             $s_race = "";
             $s_gender = $actorValues[$charKey]['gender'] ?? '';
-            $b_scene = IsInScene($character);
+            $s_attribute = get_people_attribute($character);
+            $b_restrained = ($s_attribute == 'restrained');
+            $b_scene = IsInScene($character) || $b_restrained;
             $b_naked = $actorFlags[$charKey]['isnaked'] ?? false;
             $s_race = $actorValues[$charKey]['race'] ?? '';
                 
@@ -583,9 +638,14 @@ function BuildNearbyCharactersContext($params) {
                 $s_child =  (IsChildActor($character)) ? " child" : ""; 
                 $line .= " ({$s_race} {$s_gender}{$s_child})";
             } else {
-                $line .= " ({$s_gender})";
+                if (strlen($s_gender) > 0)
+                    $line .= " ({$s_gender})";
             }
-            
+            if (!$b_restrained) {
+                if (strlen($s_attribute) > 0) {
+                    $line .= " ({$s_attribute})";
+                }
+            }
             // Add faction info if available
             if (isset($actorValues[$charKey]['faction']) && !empty($actorValues[$charKey]['faction'])) {
                 $line .= " - " . $actorValues[$charKey]['faction'];
@@ -649,22 +709,33 @@ function BuildNearbyCharactersContext($params) {
             }
 
             if ($b_naked || $b_scene) {
-                if (!IsCreature($character)) {
-                    $line .= " - naked";
-                }
-                if ($is_nsfw) {
-                    if ($s_gender == 'male') {
-                        $line .= GetPenisSizeShort($character);
-                        $line .= GetPenisSizeDetails($character, $s_race, true);
-                        
-                        $arousalThreshold = intval(GetActorValue($GLOBALS['PLAYER_NAME'], "arousalForSex")); // arousalForSex arousalForHarass
-                        $arousal = intval(GetActorValue($character, "arousal"));
-                        if ($b_scene) {
-                            $line.= ", in erection";
-                        } elseif (($arousal > 80) && ($arousal >= $arousalThreshold)) {
-                            $line.= ", in erection";
-                        } elseif (($arousal < 15) && ($arousal < $arousalThreshold)) {
-                            $line.= ", flaccid now"; 
+                if (strlen($s_gender) > 0) {
+                    if (!IsCreature($character)) {
+                        $line .= " - naked";
+                    }
+                    if ($is_nsfw) {
+                        if ($s_gender == 'male') {
+                            $line .= GetPenisSizeShort($character);
+                            $line .= GetPenisSizeDetails($character, $s_race, true);
+                            
+                            $arousalThreshold = intval(GetActorValue($GLOBALS['PLAYER_NAME'], "arousalForSex")); // arousalForSex arousalForHarass
+                            $arousal = intval(GetActorValue($character, "arousal"));
+                            if ($b_scene) {
+                                $line.= ", in erection";
+                            } elseif ($arousal >= intval($arousalThreshold * 0.8)) {
+                                $line.= ", in erection";
+                            } elseif ($arousal <= intval($arousalThreshold * 0.2))  {
+                                $line.= ", flaccid now"; 
+                            }
+                        }
+                    }
+                } else { // no gender yet, let's look for names
+                    if ($is_nsfw && $b_scene) {
+                        if ($s_gender != 'female') {
+                            //$sx .= GetPenisSizeShort($character);
+                            $sx = GetPenisSizeDetails($character, '', true);
+                            if (strlen($sx)>0)
+                                $line .= " - having erected" . $sx;
                         }
                     }
                 }
@@ -740,7 +811,7 @@ function BuildNearbyCharactersContext($params) {
  */
 function BuildNPCRelationshipsContext($params) {
     $params = ValidateEnvironmentParams($params);
-    $character = $params['target'];
+    $character = $params["target"];
     $player_name = $params['player_name'];
     $utilities = new Utilities();
     

@@ -1,7 +1,6 @@
-    AND type<>'narrator_welcome' 
-    OR type ILIKE 'info\_%' 
-    OR type ILIKE 'ext\_%' 
+    AND type<>'narrator_welcome' AND type<>'minai_storeitem' AND type<>'minai_storeitem_batch' 
+    and type<>'funccall' and type<>'togglemodel' {$removeBooks} {$sqlfilter} {$ext_sqlfilter1} 
     ".(($b_actor) ? " AND (people ILIKE '%|$actorEscaped%')" : " "). 
-    " {$removeBooks} {$sqlfilter} ". 
     //((false)?" and gamets>".($currentGameTs-(60*60*60*60)):""). 
-    " ORDER BY gamets desc, ts desc, rowid desc LIMIT {$nRecordsLimit} OFFSET 0";  
+    " OR type ILIKE 'info\_%' OR type ILIKE 'ext\_%' {$ext_sqlfilter2}  
+    ORDER BY gamets desc, ts desc, rowid desc LIMIT {$nRecordsLimit} OFFSET 0 "; 

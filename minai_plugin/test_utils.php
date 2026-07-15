@@ -7,18 +7,19 @@ error_reporting(E_ALL);
 $configFilepath = __DIR__ . DIRECTORY_SEPARATOR . ".." . DIRECTORY_SEPARATOR . ".." . DIRECTORY_SEPARATOR . "conf" . DIRECTORY_SEPARATOR;
 $rootEnginePath = __DIR__ . DIRECTORY_SEPARATOR . ".." . DIRECTORY_SEPARATOR . ".." . DIRECTORY_SEPARATOR;
 
-if (!file_exists($configFilepath . "conf.php")) {
-  @copy($configFilepath . "conf.sample.php", $configFilepath . "conf.php");   // Defaults
+/* if (!file_exists($configFilepath . "conf_.php")) {
+  @copy($configFilepath . "conf.sample.php", $configFilepath . "conf_.php");   // Defaults
   if (!file_exists($rootEnginePath . "data" . DIRECTORY_SEPARATOR . "mysqlitedb.db")) {
     require($rootEnginePath . "ui" . DIRECTORY_SEPARATOR . "cmd" . DIRECTORY_SEPARATOR . "install-db.php");
   }
   die(header("Location: conf_wizard.php"));
-}
+} */
 
-require_once($rootEnginePath . "conf" . DIRECTORY_SEPARATOR . "conf.php");
-require_once($rootEnginePath . "lib" . DIRECTORY_SEPARATOR . "{$GLOBALS["DBDRIVER"]}.class.php");
+//require_once($rootEnginePath . "conf" . DIRECTORY_SEPARATOR . "conf_.php");
 
-print("dbdriver: " . $GLOBALS["DBDRIVER"] . "\n");
+require_once("/var/www/html/HerikaServer/lib/postgresql.class.php"); 
+
+//print("dbdriver: " . $GLOBALS["DB DRIVER"] . "\n");
 
 $GLOBALS['HERIKA_NAME'] = "Herika";
 
@@ -32,7 +33,7 @@ require_once("util.php");
 Function has_actor_value_cache_test() {
     print("has_actor_value_cache_test: ");
     $name = uniqid();
-    $GLOBALS[MINAI_ACTOR_VALUE_CACHE][$name]['key1'] = "test value";
+    $GLOBALS["MINAI_ACTOR_VALUE_CACHE"][$name]['key1'] = "test value";
 
     assertTrue(HasActorValueCache($name, "key1"), "doesn't have actor value cache");
     assertTrue(HasActorValueCache($name), "doesn't have actor value cache");
@@ -45,7 +46,7 @@ Function has_actor_value_cache_test() {
 Function get_cache_value_return_null_if_not_exists_test() {
     print("get_cache_value_return_null_if_not_exists_test: ");
     $name = uniqid();
-    $GLOBALS[MINAI_ACTOR_VALUE_CACHE][$name]['key1'] = "test value";
+    $GLOBALS["MINAI_ACTOR_VALUE_CACHE"][$name]['key1'] = "test value";
 
     assertString("test value", GetActorValueCache($name, "key1"), "doesn't return value if exists");
     print("PASSED\n");
@@ -54,7 +55,7 @@ Function get_cache_value_return_null_if_not_exists_test() {
 Function get_cache_value_return_null_if_not_exists() {
     print("get_cache_value_return_null_if_not_exists: ");
     $name = uniqid();
-    $GLOBALS[MINAI_ACTOR_VALUE_CACHE][$name]['key1'] = "test value";
+    $GLOBALS["MINAI_ACTOR_VALUE_CACHE"][$name]['key1'] = "test value";
 
     assertTrue(GetActorValueCache($name, "key2") === null, "doesn't return null if not exists");
     assertTrue(GetActorValueCache("name_not_exist", "key") === null, "doesn't return null if not exists");
@@ -86,8 +87,8 @@ Function build_cache_get_value_from_cache_correctly_test() {
 Function get_actor_value_from_cache_test() {
     print("get_actor_value_from_cache_test: ");
     $name = uniqid();
-    $GLOBALS[MINAI_ACTOR_VALUE_CACHE][$name]['key1'] = "test value";
-    $GLOBALS[MINAI_ACTOR_VALUE_CACHE][$name]['key2'] = "test value2";
+    $GLOBALS["MINAI_ACTOR_VALUE_CACHE"][$name]['key1'] = "test value";
+    $GLOBALS["MINAI_ACTOR_VALUE_CACHE"][$name]['key2'] = "test value2";
 
     assertString("test value", GetActorValue($name, "key1"), "doesn't get actor value from cache");
     assertString("test value2", GetActorValue($name, "key2"), "doesn't get actor value from cache");

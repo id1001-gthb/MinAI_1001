@@ -1,8 +1,10 @@
 <?php
-// not to be included explicitly, must be included only via requireFilesRecursively() L 2101
+// not to be included explicitly, must be included only via requireFilesRecursively() after context_pre.php L 2101
+//error_log("-- context -- " . __FILE__); // debug
+$GLOBALS["checkpoint_context_php"] = true;
 
 // Start metrics for this entry point
-require_once("utils/metrics_util.php");
+require_once(__DIR__."/utils/metrics_util.php");
 minai_start_timer('context_php', 'MinAI');
 
 // Avoid processing for fast / storage events
@@ -10,25 +12,27 @@ if (isset($GLOBALS["minai_skip_processing"]) && $GLOBALS["minai_skip_processing"
   return;
 }
 
-require_once("config.php");
-require_once("util.php");
-require_once("contextbuilders.php");
-require_once("mind_influence.php");
-require_once("environmentalContext.php");
-require_once("contextbuilders/system_prompt_context.php");
-require_once("utils/prompt_slop_cleanup.php");
+require_once(__DIR__."/config.php");
+require_once(__DIR__."/util.php");
+require_once(__DIR__."/contextbuilders.php");
+require_once(__DIR__."/mind_influence.php");
+require_once(__DIR__."/environmentalContext.php");
+require_once(__DIR__."/contextbuilders/system_prompt_context.php");
+require_once(__DIR__."/utils/prompt_slop_cleanup.php");
+
 
 minai_start_timer("contextProcessing", "context_php");
 
+// Initialize common variables
+require_once(__DIR__."/utils/init_common_variables.php");
+//error_log("[init_common_variables] target=".$GLOBALS["target"]." target_gender=".$GLOBALS["target_gender"]." HERIKA_NAME=".$GLOBALS["HERIKA_NAME"]." herika_gender=".$GLOBALS["herika_gender"]." ".__FILE__); //debug
 
 // Cache target actor
-$GLOBALS["target"] = GetTargetActor();
-$GLOBALS["target_gender"] = GetGender($GLOBALS["target"]); //Is Female($GLOBALS["target"]) ? "female" : "male";
-$GLOBALS["target_pronouns"] = GetActorPronouns($GLOBALS["target"]);
+//$GLOBALS["target"] = GetTargetActor();
+//$GLOBALS["target_gender"] = GetGender($GLOBALS["target"]); //Is Female($GLOBALS["target"]) ? "female" : "male";
+//$GLOBALS["target_pronouns"] = GetActorPronouns($GLOBALS["target"]);
 
-
-// if context.php is required before head[] assignment
-//requireFilesRecursively(__DIR__.DIRECTORY_SEPARATOR."ext".DIRECTORY_SEPARATOR,"context.php");
+//-------------------------------------------------
 
 if (!isset($GLOBALS['head'])) {
 	
@@ -72,334 +76,9 @@ if (!isset($GLOBALS['head'])) {
 }
 
 //error_log("->functions ctx: " . implode(' . ', $GLOBALS["ENABLED_ FUNCTIONS"]));
-/*
-if (isset($GLOBALS["ENABLED_ FUNCTIONS"]) && (count($GLOBALS["ENABLED_ FUNCTIONS"])>0)) {
-	//$s_ef = implode(' . ', $GLOBALS["ENABLED_ FUNCTIONS"];
-	if (count($GLOBALS["ENABLED_ FUNCTIONS"]) < count($GLOBALS["ENABLED_ FUNCTIONS_COPY"])) {
-		if (
-			//(!in_array('ExtCmdIncreaseArousal',$GLOBALS["ENABLED_ FUNCTIONS"])) && 
-			//(!in_array('ExtCmdDecreaseArousal',$GLOBALS["ENABLED_ FUNCTIONS"])) && 
-			(!in_array('ExtCmdGiveItem',$GLOBALS["ENABLED_ FUNCTIONS"])) && 
-			(!in_array('ExtCmdTakeItem',$GLOBALS["ENABLED_ FUNCTIONS"])) && 
-			(!in_array('ExtCmdTrade',$GLOBALS["ENABLED_ FUNCTIONS"])) && 
-			(!in_array('ExtCmdStartLooting',$GLOBALS["ENABLED_ FUNCTIONS"])) && 
-			(!in_array('ExtCmdStopLooting',$GLOBALS["ENABLED_ FUNCTIONS"])) && 
-			(!in_array('ExtCmdFollow',$GLOBALS["ENABLED_ FUNCTIONS"]))  
-		){ 	// broken functions
-			$GLOBALS["ENABLED_ FUNCTIONS"] = $GLOBALS["ENABLED_ FUNCTIONS_COPY"];
-			error_log("Warning: functions replaced from copy. ");
-		}
-	}
-}
-*/
-
-
-//---------------------------------------------------------------------------
-// Slop cleanup:
-// Delete useless information.
-// Values are case insensitive.
-// Values should ordered from longer first to shortest last. 
-//---------------------------------------------------------------------------
-
-$str_to_clean_list = [ // all these are deleted from output
-	'## Snow Fox (far away)',  
-	'## Rabbit (far away)',
-	'## Snake (far away)',
-	'## Deer (far away)',
-	'## Goat (far away)',
-	'## Cow (far away)',
-	'## Fox (far away)',
-	'2 Snow Fox (far away)', 
-	'Snow Fox (far away)', 
-	'2 Rabbit (far away)',
-	'Rabbit (far away)',
-	'Snake (far away)',
-	'2 Deer (far away)',
-	'Deer (far away)',
-	'2 Goat (far away)',
-	'Goat (far away)',
-	//'2 Wolf (far away)',
-	//'Wolf (far away)',
-	'2 Cow (far away)',
-	'Cow (far away)',
-	'2 Fox (far away)',
-	'Fox (far away)',
-	
-	'2 Frost Troll (dead)',
-	'Frost Troll (dead)',
-	'2 Frostbite Spider (dead)',
-	'Frostbite Spider (dead)',
-	'2 Giant Youngling (dead)',
-	'Giant Youngling (dead)',
-	'2 Giantess (dead)',
-	'Giantess (dead)',
-	'2 Giant (dead)',
-	'Giant (dead)',
-	'2 Wolf (dead)',
-	'Wolf (dead)',
-	'2 Bear (dead)',
-	'Bear (dead)',
-	'2 Snow Bear (dead)',
-	'Snow Bear (dead)',
-	'2 Deer (dead)',
-	'Deer (dead)',
-	'2 Goat (dead)',
-	'Goat (dead)',
-	'2 Cow (dead)',
-	'Cow (dead)',
-	'2 Fox (dead)',
-	'Fox (dead)',
-
-	// 	
-	'(hint:)' 
-];
-
-$targets_to_clean_list = [ // all these are deleted from targets list
-	'2 Snow Fox (far away),', 
-	'Snow Fox (far away),', 
-	'2 Rabbit (far away),',
-	'Rabbit (far away),',
-	'Snake (far away),',
-	'2 Deer (far away),',
-	'Deer (far away),',
-	'2 Goat (far away),',
-	'Goat (far away),',
-	//'2 Wolf (far away),',
-	//'Wolf (far away),',
-	'2 Cow (far away),',
-	'Cow (far away),',
-	'2 Fox (far away),',
-	'Fox (far away),',
-	
-	'2 Frost Troll (dead),',
-	'Frost Troll (dead),',
-	'2 Frostbite Spider (dead),',
-	'Frostbite Spider (dead),',
-	'2 Giant Youngling (dead),',
-	'Giant Youngling (dead),',
-	'2 Giantess (dead),',
-	'Giantess (dead),',
-	'2 Giant (dead),',
-	'Giant (dead),',
-	'2 Wolf (dead),',
-	'Wolf (dead),',
-	'2 Bear (dead),',
-	'Bear (dead),',
-	'2 Snow Bear (dead),',
-	'Snow Bear (dead),',
-	'2 Deer (dead),',
-	'Deer (dead),',
-	'2 Goat (dead),',
-	'Goat (dead),',
-	'2 Cow (dead),',
-	'Cow (dead),',
-	'2 Fox (dead),',
-	'Fox (dead),'
-	
-	
-];
-
-//---------------------------------------------------------------------------
-// Multiple replacements:
-// Dictionary is parsed first to last for replacements. 
-// 'key' => 'value'
-// Any key found is replaced with value. 
-// Keys are case sensitive.
-// Keys should ordered from longer first to shortest last. 
-//---------------------------------------------------------------------------
-
-$replacements_dictionary = [ // hardwired for now, probably better as an external resource
-
-	//# HISTORIC DIALOGUE AND EVENTS IN CHRONOLOGICAL ORDER
-	'HISTORIC DIALOGUE AND EVENTS IN CHRONOLOGICAL ORDER' => 'DIALOGUE HISTORY and RECENT EVENTS in chronological order',
-	//# NEARBY ACTORS/NPC IN THE SCENE 
-	'NEARBY ACTORS/NPC IN THE SCENE' => 'NEARBY CHARACTERS IN THE SCENE',
-
-    //Player:The Narrator:	
-    $GLOBALS["PLAYER_NAME"].":The Narrator:" => $GLOBALS["PLAYER_NAME"].":",
-	'Snow Fox (hostile)' => 'Snow Fox', 
-	'Rabbit (hostile)' => 'Rabbit', 
-	'Snake (hostile)' => 'Snake', 
-	'2 Deer (hostile)' => '2 Deer',
-	'Deer (hostile)' => 'Deer',
-	'2 Goat (hostile)' => '2 Goat', 
-	'Goat (hostile)' => 'Goat', 
-	'Cow (hostile)' => 'Cow', 
-	'Fox (hostile)' => 'Fox', 
-	'Rat (hostile)' => 'Rat',
-
-	// cleanup:
-	'  ' => ' ',
-	', ,' => ',',
-	', .' => '.',
-	',.' => '.',
-	'),' => ',',
-	',,' => ','
-];            
-
-
-function CustomLineProcess($contextLine="", $s2clean_list, $repl_dictionary) {
-// clean context element 
-	$s_res = "";
-	if (strlen(trim($contextLine)) > 0) {
-		$s_clean1 = str_ireplace($s2clean_list, [' '], $contextLine);
-		$s_clean2 = strtr($s_clean1, $repl_dictionary);
-		$s_res = $s_clean2;
-	}
-	return $s_res;
-}
-
-function CustomContextProcess($contextData, $str2clean_list, $replace_dictionary) {
-// clean context array elements 
-    if (!is_array($contextData)) {
-        return $contextData;
-    }
-
-    if (!is_array($str2clean_list)) {
-		if (strlen($str2clean_list)<1)
-			return $contextData;
-    }
-
-    if (!is_array($replace_dictionary)) {
-        return $contextData;
-    } else {
-		if (count($replace_dictionary)<1)
-			return $contextData;
-	}
-
-	$i = 0;
-	
-	$cleaned_res = [];
-	foreach ($contextData as $entry) {
-        if (!isset($entry['content'])) {
-            continue;
-        }
-		
-        $originalContent = $entry['content'];	
-		$s_clean = CustomLineProcess($originalContent, $str2clean_list, $replace_dictionary);
-		$entry['content'] = $s_clean;
-		$cleaned_res[] = $entry;
-		
-		$i = $i + 1;
-	}
-
-	return $cleaned_res;
-}
-
-function CustomFunctionsProcess($contextData, $str2clean_list, $replace_dictionary) {
-// clean functions
-    if (!is_array($contextData)) {
-        return $contextData;
-    }
-
-    if (!is_array($str2clean_list)) {
-		if (strlen($str2clean_list)<1)
-			return $contextData;
-    }
-
-    if (!is_array($replace_dictionary)) {
-        return $contextData;
-    } else {
-		if (count($replace_dictionary)<1)
-			return $contextData;
-	}
-	
-	$i = 0;
-	
-	$cleaned_res = [];
-	foreach ($contextData as $entry) {
-        if (!isset($entry['description'])) {
-            continue;
-        }
-		
-        $originalContent = $entry['description'];	
-
-		$s_clean = CustomLineProcess($originalContent, $str2clean_list, $replace_dictionary);
-		$entry['description'] = $s_clean;
-		$cleaned_res[] = $entry;
-		
-		$i = $i + 1;
-	}
-	return $cleaned_res;
-}
-
-Function CustomCleanTargets($clean_corpses=false, $clean_far_away=false, $clean_hostile_rabbits=false) {
-// clean targets list
-	if (isset($GLOBALS["FUNCTION_PARM_INSPECT"]) && ($clean_corpses || $clean_far_away) ) {
-		$s_x = implode(",", $GLOBALS["FUNCTION_PARM_INSPECT"]);
-
-		foreach ($GLOBALS["FUNCTION_PARM_INSPECT"] as $ix => $s_target) {
-			//$s_x .= $s_target.",";
-			if ($clean_corpses && stripos($s_target,'(dead)')) {
-				unset($GLOBALS["FUNCTION_PARM_INSPECT"][$ix]);
-			}
-			if ($clean_far_away && stripos($s_target,'(far away)')) {
-				unset($GLOBALS["FUNCTION_PARM_INSPECT"][$ix]);
-			}
-			if ($clean_hostile_rabbits && stripos($s_target,'(hostile)')) {
-				if (stripos($s_target,'rabbit ') || 
-					stripos($s_target,'horse ') || 
-					stripos($s_target,'deer ') || 
-					stripos($s_target,'goat ') || 
-					stripos($s_target,'elk ') || 
-					stripos($s_target,'cow ') || 
-					stripos($s_target,'cat ') || 
-					stripos($s_target,'fox ') || 
-					
-					stripos($s_target,'rat ') 
-				) {
-					unset($GLOBALS["FUNCTION_PARM_INSPECT"][$ix]);
-				}
-			}
-			//$s_y .= $s_target.",";
-		}
-		$s_y = implode(",", $GLOBALS["FUNCTION_PARM_INSPECT"]);
-	}
-}
 
 
 //--------------------------------------------------------------
-// context replacements:
-//--------------------------------------------------------------
-
-if (isset($GLOBALS['head'])) { // clean system (head) prompt
-	if (is_array($GLOBALS['head'])) {
-		$a_x = CustomContextProcess($GLOBALS['head'], $str_to_clean_list, $replacements_dictionary); 
-		$GLOBALS['head'] = $a_x; 
-	}
-	
-	//warn about relationship
-	if (stripos($GLOBALS['head'][0]['content'],'rival, foe')) {
-			error_log(" - WARNING - relationship. npc: " . ($GLOBALS["HERIKA_NAME"] ?? "?") );
-	}
-
-	//warn about placeholder
-	if (strpos($GLOBALS['head'][0]['content'],'PLAYER_NAME')) {
-			error_log(" - WARNING - unsolved PLAYER_NAME placeholder in prompt. npc: " . ($GLOBALS["HERIKA_NAME"] ?? "?") );
-	}
-	
-}	
-
-if (isset($GLOBALS["contextDataFull"])) { // clean context array parsing all elements
-	$GLOBALS['contextDataFull'] = CustomContextProcess($GLOBALS['contextDataFull'], $str_to_clean_list, $replacements_dictionary); 
-} else 
-	error_log("[context.php] ERROR contextDataFull not defined! ".__FILE__." ".__LINE__); // error
-
-if (isset($GLOBALS["FUNCTIONS_ARE_ENABLED"]) && $GLOBALS["FUNCTIONS_ARE_ENABLED"]) { // clean function descriptions (targets)
-
-	CustomCleanTargets(true, true, true);
-	/*
-	if (isset($GLOBALS["FUNCTION_PARM_INSPECT"])) {
-		$s_x = implode(",", $GLOBALS["FUNCTION_PARM_INSPECT"]);
-		$s_y = str_ireplace($targets_to_clean_list, [','], $s_x);
-		$GLOBALS["FUNCTION_PARM_INSPECT"] = explode(",",$s_y);
-	}
-	*/
-	//if (isset($GLOBALS["FUNCTIONS"])) {
-	//	$GLOBALS["FUNCTIONS"] = CustomFunctionsProcess($GLOBALS["FUNCTIONS"], $str_to_clean_list, $replacements_dictionary);
-	//}
-	
-}
 
 if (isset($GLOBALS["TTS_FFMPEG_FILTERS"]["tempo"])) {
 	$s_tempo = $GLOBALS["TTS_FFMPEG_FILTERS"]["tempo"];  
@@ -536,23 +215,25 @@ minai_stop_timer('contextProcessing');
 // Update the system prompt (0th entry) with our optimized version
 UpdateSystemPrompt();
 
-require "/var/www/html/HerikaServer/ext/minai_plugin/command_prompt_custom.php";
+//require(__DIR__."/command_prompt_custom.php");
 
 //error_log("-- context php -- ENFORCE_ACTIONS_PROMPT=".$GLOBALS["ENFORCE_ACTIONS_PROMPT"]); // debug
-
+/*
 $s_minp = trim($GLOBALS["MINAI_ACTION_PROMPT"] ?? '');
-
 if (strlen($s_minp) > 0) {
+	//$GLOBALS["TEMPLATE_DIALOG"] .= "\n".$s_minp;
 	//$GLOBALS["contextDataFull"][] = array('role' => 'user', 'content' => $s_minp); // not last entry, not effective
-	$GLOBALS["ENFORCE_ACTIONS_PROMPT"] = true;
-	$GLOBALS["PATCH_PROMPT_ENFORCE_ACTIONS"] = true;
-	$GLOBALS["COMMAND_PROMPT_ENFORCE_ACTIONS"] = $s_minp; // ."\n". $GLOBALS["COMMAND_PROMPT_ENFORCE_ACTIONS"];
+	
+	//$GLOBALS["ENFORCE_ACTIONS_PROMPT"] = true;
+	//$GLOBALS["PATCH_PROMPT_ENFORCE_ACTIONS"] = true;
+	//$GLOBALS["COMMAND_PROMPT_ENFORCE_ACTIONS"] = $s_minp; // ."\n". $GLOBALS["COMMAND_PROMPT_ENFORCE_ACTIONS"];
 
-    setConfOption("_minai_action_prompt", $s_minp);
+  //setConfOption("_minai_action_prompt", $s_minp);
 
 } else {
-	error_log("[context php] {$GLOBALS["HERIKA_NAME"]} NO PROMPT! ENFORCE_ACTIONS_PROMPT=".$GLOBALS["ENFORCE_ACTIONS_PROMPT"]); // debug
+	if ($GLOBALS["HERIKA_NAME"] !== 'The Narrator')
+		error_log("[context php] {$GLOBALS["HERIKA_NAME"]} NO PROMPT! ENFORCE_ACTIONS_PROMPT=".$GLOBALS["ENFORCE_ACTIONS_PROMPT"]); // debug
 }
-
+*/
 minai_stop_timer('context_php');
 // minai_stop_timer('Pre-LLM');

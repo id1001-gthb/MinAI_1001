@@ -3,8 +3,9 @@
 function setPlayfulBanterPrompts($currentName) 
 {
     $gender = GetGender($currentName);
-    $in0 = "(";
-    $in1 = ")";
+    $in0 = "<instruction>(";
+    $in1 = ")</instruction>";
+    
     $GLOBALS["PROMPTS"]["sextalk_climaxchastity"] = [
         "cue" => [
             "{$in0}$currentName jokes about the chastity belt, saying something funny about how it's like a challenge to come up with new ways to tease each other.{$in1} {$GLOBALS["TEMPLATE_DIALOG"]}",

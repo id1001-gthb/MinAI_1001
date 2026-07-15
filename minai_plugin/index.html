@@ -551,7 +551,7 @@ a:active {
             <div class="kofi-button-container">
                 <script src='https://storage.ko-fi.com/cdn/widget/Widget_2.js'></script>
                 <script>
-                    kofiwidget2.init('Support me on Ko-fi', '#72a4f2', 'S6S51B7MJA');
+                    kofiwidget2.init('Support Min on Ko-fi', '#72a4f2', 'S6S51B7MJA');
                     kofiwidget2.draw();
                 </script>
             </div>
@@ -578,15 +578,17 @@ a:active {
                 <!-- Update Buttons -->
                 <div id="update-buttons" class="update-buttons" style="display:none;">
                     <div class="links">
-                        <button class="update-button" onclick="updateToLatestVersion('stable')">Update to Latest Stable</button>
-                        <button class="update-button" onclick="updateToLatestVersion('main')">Update to Latest Development</button>
+                        <button class="update-button" onclick="updateToLatestVersion('stable')">Restore Old Stable</button>
+                        <button class="update-button" onclick="updateToLatestVersion('main')">Restore Previous</button>
                     </div>
                 </div>
                 
                 <div align="left" class="version-text">
+                <p>You can install the latest version from <a href="https://github.com/id1001-gthb/MinAI_1001/releases">git repository</a> with <a href="https://github.com/id1001-gthb/MinAI_1001/releases/download/minai_plugin_web_213dev8a/install_MinAI.bat">install_MinAI.bat</a>.</p>
                 <p><a href="version_changelog.txt" target="_blank">Versions:</a></p> 
-                <p>- 2.1.3 (stable) is compatible with CHIM v1.2.x, not with CHIM v1.3.x </p> 
-                <p>- 2.1.3-dev7 is compatible with CHIM v1.3.5.x., 2.1.1, 2.2.2, 2.3.x, 2.4.x <a href="version_changelog.txt" target="_blank">Read this for details.</a></p>
+                <p>- 2.1.3 (stable) is compatible with CHIM v1.2.x, not with recent CHIM versions </p> 
+                <p>- 2.1.3-dev7 is compatible with CHIM v1.3.5.x., 2.1.x to 2.5.x </p>
+                <p>- 2.1.3-dev8 is compatible with CHIM v3.1.x. <a href="version_changelog.txt" target="_blank">Read this for details.</a></p>
                 <div class="important-note">
                 <b>IMPORTANT:</b> After updating from previous version, open the plugin <a href="config.html" class="cache-bust">Configuration Page</a>, </br>reset the settings with <a href="config.html"><nobr class="nav-button warning">Reset All to Defaults</nobr></a> then save.
                 </div>
@@ -619,7 +621,7 @@ a:active {
 
             <!-- External Links -->
             <div class="external-links">
-                <a href="https://github.com/MinLL/MinAI/tree/main">Github</a>
+                <a href="https://github.com/id1001-gthb/MinAI_1001">Github</a>
                 <a href="/HerikaServer/" class="cache-bust">Back to Main CHIM Page</a>
             </div>
         </div>
@@ -752,7 +754,7 @@ a:active {
                 errorMessageDiv.textContent = `Error updating to the latest version: ${error.message}`;
                 errorMessageDiv.style.display = 'block';
                 appendMessage('error', `Error: ${error.message}`);
-                console.error('Error updating to the latest version:', error);
+                console.error('Error updating to the previous version:', error);
             }
         }
 
@@ -780,15 +782,15 @@ a:active {
                     versionInfoDiv.innerHTML = `
                         <div class="version-details">
                             <div class="version-item">
-                                <div class="version-label">Current Version</div>
+                                <div class="version-label">Your Version</div>
                                 <div class="version-value">${localVersion}</div>
                             </div>
                             <div class="version-item">
-                                <div class="version-label">Latest Stable</div>
+                                <div class="version-label">Old Stable Version</div>
                                 <div class="version-value">${stableVersion}</div>
                             </div>
                             <div class="version-item">
-                                <div class="version-label">Latest Development</div>
+                                <div class="version-label">Previous Version</div>
                                 <div class="version-value">${mainVersion}</div>
                             </div>
                         </div>
@@ -812,10 +814,10 @@ a:active {
                     updateButtonsDiv.innerHTML = `
                         <div class="links">
                             <button class="update-button stable" onclick="updateToLatestVersion('stable')">
-                                Update to Latest Stable
+                                Restore Old Stable
                             </button>
                             <button class="update-button development" onclick="updateToLatestVersion('main')">
-                                Update to Latest Development
+                                Restore Previous
                             </button>
                         </div>
                     `;

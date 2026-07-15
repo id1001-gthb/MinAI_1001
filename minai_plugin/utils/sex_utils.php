@@ -148,10 +148,10 @@ function addXPersonality($jsonXPersonality) {
         $sex_howto = "";
         
         if (isset($jsonXPersonality["speakStyleDuringSex"]) && (strlen($jsonXPersonality["speakStyleDuringSex"]) > 0))
-            $sex_howto .= "\n - speaks in this style: <speech_style>" . strip_tags($jsonXPersonality["speakStyleDuringSex"] ?? "playful banter" ) ."</speech_style> ";
+            $sex_howto .= "\n - <speech_style> speaks in intimate moments using this style: " . strip_tags($jsonXPersonality["speakStyleDuringSex"] ?? "playful banter" ) ."</speech_style> ";
         
         if (isset($jsonXPersonality["preferredSexPositions"]) && (count($jsonXPersonality["preferredSexPositions"]) > 0))
-            $sex_howto .= strip_tags("\n - prefers these positions: " . implode(", ", $jsonXPersonality["preferredSexPositions"]));
+            $sex_howto .= strip_tags("\n - prefers these sex positions: " . implode(", ", $jsonXPersonality["preferredSexPositions"]));
         
         if (isset($jsonXPersonality["sexualBehavior"]) && (count($jsonXPersonality["sexualBehavior"]) > 0))
             $sex_howto .= strip_tags("\n - likes to participate in such sex activities: " . implode(", ", $jsonXPersonality["sexualBehavior"]));

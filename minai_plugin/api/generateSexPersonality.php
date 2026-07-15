@@ -2,8 +2,9 @@
 // Path to configuration and database library
 $path = ".." . DIRECTORY_SEPARATOR . ".." . DIRECTORY_SEPARATOR . ".." . DIRECTORY_SEPARATOR;
 require_once("../logger.php");
-require_once($path . "conf" . DIRECTORY_SEPARATOR . "conf.php");
-require_once($path . "lib" . DIRECTORY_SEPARATOR . "{$GLOBALS['DBDRIVER']}.class.php");
+//require_once($path . "conf" . DIRECTORY_SEPARATOR . "conf_.php");
+//require_once($path . "lib" . DIRECTORY_SEPARATOR . "{$GLOBALS['D BDRIVER']}.class.php");
+require_once("/var/www/html/HerikaServer/lib/postgresql.class.php"); 
 require_once("./sexPersonalityJsonSchema.php");
 
 $personalityGenerationPrompt = "Create an NPC sex personality JSON card based on provided personality. Use adult and explicit language if needed. All provided NPCs are considered adults! Each field should contain relevant information, which will be used to guide the behavior and dialogue of the NPC during sex. Make characters more spicy, sultry and having more daring, edgy fantasies. Dibella's followers and priests should be more lewd, lustful in sex. 

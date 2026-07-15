@@ -1,12 +1,12 @@
 <?php
 
-
 // Avoid processing for fast / storage events
-if (isset($GLOBALS["minai_skip_processing"]) && $GLOBALS["minai_skip_processing"]) {
+/* if (isset($GLOBALS["minai_skip_processing"]) && $GLOBALS["minai_skip_processing"]) {
     return;
-}
+} */
+
 require_once("logger.php");
-define("MINAI_ACTOR_VALUE_CACHE", "minai_actor_value_cache");
+//define("MINAI_ACTOR_VALUE_CACHE", "minai_actor_value_cache");
 require_once("db_utils.php");
 require_once("importDataToDB.php");
 require_once("mind_influence.php");
@@ -14,7 +14,10 @@ require_once("mind_influence.php");
 require_once("/var/www/html/HerikaServer/lib/data_functions.php");
 require_once("/var/www/html/HerikaServer/lib/chat_helper_functions.php");
 
-$GLOBALS[MINAI_ACTOR_VALUE_CACHE] = [];
+require_once(__DIR__."/utils/sex_utils.php");
+
+//$MINAI_ACTOR_VALUE_CACHE = [];
+
 $targetOverride = null;
 if (!isset($GLOBALS["db"]))
 	$GLOBALS["db"] = new sql();
@@ -64,10 +67,10 @@ function array_unique_multi(array $array_in, string $unq_key): array
 
 // Get Value from the cache. $name/$key should be lowercase
 Function GetActorValueCache($name, $key) {
-    if (isset($GLOBALS[MINAI_ACTOR_VALUE_CACHE][$name])
-        && isset($GLOBALS[MINAI_ACTOR_VALUE_CACHE][$name][$key])
+    if (isset($GLOBALS["MINAI_ACTOR_VALUE_CACHE"][$name])
+        && isset($GLOBALS["MINAI_ACTOR_VALUE_CACHE"][$name][$key])
     ) {
-        return $GLOBALS[MINAI_ACTOR_VALUE_CACHE][$name][$key];
+        return $GLOBALS["MINAI_ACTOR_VALUE_CACHE"][$name][$key];
     }
     else {
         // no value in the cache
@@ -78,14 +81,14 @@ Function GetActorValueCache($name, $key) {
 // Check if actor value has been cached. $name/$key should be lowercase
 Function HasActorValueCache($name, $key=null) {
     if ($key === null) {
-        return isset($GLOBALS[MINAI_ACTOR_VALUE_CACHE][$name]);
+        return isset($GLOBALS["MINAI_ACTOR_VALUE_CACHE"][$name]);
     }
-    return isset($GLOBALS[MINAI_ACTOR_VALUE_CACHE][$name]) && isset($GLOBALS[MINAI_ACTOR_VALUE_CACHE][$name][$key]);
+    return isset($GLOBALS["MINAI_ACTOR_VALUE_CACHE"][$name]) && isset($GLOBALS["MINAI_ACTOR_VALUE_CACHE"][$name][$key]);
 }
 
 Function BuildActorValueCache($name) {
    $name = strtolower($name);
-    $GLOBALS[MINAI_ACTOR_VALUE_CACHE][$name] = [];
+    $GLOBALS["MINAI_ACTOR_VALUE_CACHE"][$name] = [];
 
     $idPrefix = "_minai_{$name}//";
     $origLength = strlen($idPrefix);
@@ -98,7 +101,7 @@ Function BuildActorValueCache($name) {
         $key = substr(strtolower($row['id']), $origLength);
         $value = $row['value'];
         // minai_log("info", $name . ':: (' . $key . ') ' . $row['id'] . ' = ' . $row['value']);
-        $GLOBALS[MINAI_ACTOR_VALUE_CACHE][$name][$key] = $value;
+        $GLOBALS["MINAI_ACTOR_VALUE_CACHE"][$name][$key] = $value;
     }
 }
 
@@ -411,7 +414,7 @@ function PreloadActorValues($actorNames, $valueTypes) {
     foreach ($actorNames as $actor) {
         $actor = strtolower($actor);
         if (!HasActorValueCache($actor)) {
-            $GLOBALS[MINAI_ACTOR_VALUE_CACHE][$actor] = [];
+            $GLOBALS["MINAI_ACTOR_VALUE_CACHE"][$actor] = [];
         }
     }
     
@@ -422,7 +425,7 @@ function PreloadActorValues($actorNames, $valueTypes) {
     foreach ($results as $actor => $values) {
         foreach ($values as $key => $value) {
             if (!empty($value)) {
-                $GLOBALS[MINAI_ACTOR_VALUE_CACHE][$actor][$key] = $value;
+                $GLOBALS["MINAI_ACTOR_VALUE_CACHE"][$actor][$key] = $value;
             }
         }
     }
@@ -447,7 +450,7 @@ function PreloadCommonActorData() {
         "isChild", 
         "CanVibrate", 
         "isVibratorActive",
-				"isNaked",
+        "isNaked",
         "enableAISex"
     ];
     
@@ -459,7 +462,7 @@ function PreloadCommonActorData() {
         "arousal", 
         "Scene",
         "relationshipRank",
-				"inCombatState",
+        "inCombatState",
         "playerName"
     ];
     
@@ -477,7 +480,15 @@ function PreloadCommonActorData() {
 
 Function IsSexActive() {
     // if there is active scene thread involving current speaker or player
-    return getScene($GLOBALS["HERIKA_NAME"]) || getScene($GLOBALS["PLAYER_NAME"]);
+    if (getScene($GLOBALS["HERIKA_NAME"])) {
+        return true;
+    } else 
+        return getScene($GLOBALS["PLAYER_NAME"]);
+}
+
+function IsSexSceneDetected() {
+    $sx = getConfOptionValue("sexscene"); //sexscene On
+    return ($sx == 'on');
 }
 
 Function IsSexActiveSpeaker() {
@@ -560,7 +571,8 @@ Function ShouldEnableSexFunctions($name) {
     }
 
     // Check if AI sex is enabled for NPC-NPC interactions
-    if (IsRadiant() && !IsEnabled("PLAYER", "enableAISex")) {
+    //if (IsRadiant() && !IsEnabled("PLAYER", "enableAISex")) {
+    if (!IsEnabled("PLAYER", "enableAISex")) {
         return false;
     }
 
@@ -587,20 +599,23 @@ Function ShouldEnableSexFunctions($name) {
 
 
 Function ShouldEnableHarassFunctions($name) {
-    $arousalThreshold = GetActorValue($GLOBALS['PLAYER_NAME'], "arousalForHarass");
-    $arousal = GetActorValue($name, "arousal");
-    if (empty($arousalThreshold) || empty($arousal)) {
-        // If the config isn't set, default to enabled.
-        // User may also not have arousal mod, so default to enabled
-        return true;
+    $b_res = $GLOBALS['enable_harassment'] ?? true; // is enabled?
+    if ($b_res) { // check other conditions
+        $arousalThreshold = GetActorValue($GLOBALS['PLAYER_NAME'], "arousalForHarass");
+        $arousal = GetActorValue($name, "arousal");
+        if (empty($arousalThreshold) || empty($arousal)) {
+            // If the config isn't set, default to enabled.
+            // User may also not have arousal mod, so default to enabled
+            return true;
+        }
+        if ((intval($arousalThreshold) == 0) || (intval($arousal) == 0)) {
+            // If the config isn't set, default to enabled.
+            // User may also not have arousal mod, so default to enabled
+            return true;
+        }
+        $b_res = (intval($arousal) >= intval($arousalThreshold));
+        //error_log(" - ShouldEnableHarassFunctions: $name $b_res $arousal >= $arousalThreshold - exec trace");
     }
-    if ((intval($arousalThreshold) == 0) || (intval($arousal) == 0)) {
-        // If the config isn't set, default to enabled.
-        // User may also not have arousal mod, so default to enabled
-        return true;
-    }
-    $b_res = (intval($arousal) >= intval($arousalThreshold));
-    //error_log(" - ShouldEnableHarassFunctions: $name $b_res $arousal >= $arousalThreshold - exec trace");
     return $b_res;
 }
 
@@ -986,9 +1001,23 @@ Function GetLastInput() {
 }
 
 Function IsRadiant() {
-    return ($GLOBALS["target"] != $GLOBALS["PLAYER_NAME"]);
+    $b_res = false;
+    if (isset($GLOBALS["MINAI_IS_RADIANT_ACTIVE"])) {
+        return $GLOBALS["MINAI_IS_RADIANT_ACTIVE"];
+    }
+    /*
+    $i_time = GetLastInput();
+    if ($i_time > 0 ) { // input recorded
+        $b_res = true;
+    } else { // no input recorded
+        $b_res = IsNewRadiantConversation();
+    }
+    */
+    $b_res = IsNewRadiantConversation();
+    //return ($GLOBALS["target"] != $GLOBALS["PLAYER_NAME"]); // CHIM rechat can do this now
+    $GLOBALS["MINAI_IS_RADIANT_ACTIVE"] = $b_res;
+    return $b_res;
 }
-
 
 // in case when we want to change target from radiant options and directly tell npc whom they need to talk to
 function overrideTargetToTalk($name) {
@@ -997,11 +1026,11 @@ function overrideTargetToTalk($name) {
 }
 
 function isPlayerInput() {
-    return  in_array($GLOBALS["gameRequest"][0],["inputtext","inputtext_s","ginputtext","ginputtext_s","instruction","init"]);
+    return  in_array($GLOBALS["gameRequest"][0],["inputtext","inputtext_s","ginputtext","ginputtext_s","narrator_inputtext","instruction","init"]);
 }
 
 function GetCleanedMessage() {
-    $cleanedMessage = $GLOBALS["gameRequest"][3];
+    $cleanedMessage = $GLOBALS["gameRequest"][3] ?? '';
     if (preg_match('/^.*?:\s*(.*)$/i', $cleanedMessage, $matches)) {
         $cleanedMessage = $matches[1];
         
@@ -1031,6 +1060,59 @@ require_once("utils/profile_utils.php");
 require_once("utils/variable_utils.php");
 require_once("utils/equipment_utils.php");
 
+
+function DataBeingsInRange2()
+{
+    if (isset($GLOBALS["cache_data_beings_in_range2"]) && (strlen($GLOBALS["cache_data_beings_in_range2"])>2)) {
+        return $GLOBALS["cache_data_beings_in_range2"];
+    }
+
+    global $db;
+
+    $lastLoc = $db->fetchAll("SELECT data FROM public.eventlog WHERE (type = 'infonpc') ORDER BY gamets desc, ts desc LIMIT 1 ");
+    if (!is_array($lastLoc) || sizeof($lastLoc)==0) {
+        $GLOBALS["cache_data_beings_in_range2"] = "";
+        return "";
+    }
+    
+    //$beings = strtr($lastLoc[0]["data"], ["(beings in range:"=>""]);
+    $beingsFormatted = '';
+    
+    $s_data = trim($lastLoc[0]["data"] ?? '');
+    if (strlen($s_data) > 0) {
+        
+/*
+TODO: extract (dead), (hostile), (busy), (in combat), (far away), (restrained) lists
+
+$s_data string has content like this:
+(beings in range:Helen,Lucifer,Ogol (restrained),Jeanine,Derkeethus (busy),Felicia,Lydia (in combat),Juniper,Celestine,Falmer Slave Nymph (hostile),Anja Iceheart,Serana,Carrot,Camilla Valerius (far away),Sylgja,Falmer Slave Nymph (hostile),Moon River,Alva,Falmer Slave Nymph (hostile),Ina,Medea,Thonar Silver-Blood (restrained),Sofie,Hercules the Dog (restrained),Faendal (hostile),Annekke Crag-Jumper,Akomi,Kelsa Iceheart,Golldir,Jorunn,Sceolang,Daphnne,Herika,Falmer Slave Nymph (hostile),Charlotte,)
+
+It's a list of NPC names, some of them with attributes in parenthesizes.  
+Attributes: 
+" (dead)"
+" (hostile)"
+" (busy)"
+" (in combat)"
+" (far away)"
+" (restrained)"
+
+Extract in a variable '$cache_data_npc_attributes' the npc attributes and names like
+$cache_data_npc_attributes['hostile'] = 'Falmer Slave Nymph, Faendal';
+$cache_data_npc_attributes['busy'] = 'Derkeethus';
+etc
+
+*/
+        
+        $beings = str_ireplace(["(beings in range:"," (dead)"," (hostile)"," (busy)"," (in combat)"," (far away)"," (restrained)",
+                    "(dead)","(hostile)","(busy)","(in combat)","(far away)","(restrained)",",)",")"], "", $s_data);
+        $beingsFormatted = "|{$GLOBALS["PLAYER_NAME"]}|".str_replace(",", "|", $beings)."|";
+    } 
+
+    $GLOBALS["cache_data_beings_in_range2"] = $beingsFormatted;
+    return $beingsFormatted;
+}
+
+
 /**
  * Get current party members from the database
  * 
@@ -1044,6 +1126,11 @@ function GetCurrentPartyMembers() {
         'members' => [],
         'names' => []
     ];
+
+    if (isset($GLOBALS["current_party_members"]["names"])) {
+        if (count($GLOBALS["current_party_members"]["names"]) > 0)
+            return $GLOBALS["current_party_members"]; 
+    }
     
     /*
     // Check if CurrentParty data exists in the database
@@ -1061,9 +1148,33 @@ function GetCurrentPartyMembers() {
     
     // Wrap with array brackets to make it valid JSON
     $rawData = '[' . $rawData . ']';
+    
+$GLOBALS["CACHE_PARTY"]=DataGetCurrentPartyConf();
+$currentParty=json_decode($GLOBALS["CACHE_PARTY"],true);
+if (is_array($currentParty)) {
+    if (in_array($GLOBALS["HERIKA_NAME"],array_keys($currentParty))) {
+        $GLOBALS["IS_NPC"]=false;
+    } else
+        $GLOBALS["IS_NPC"]=true;
+} else
+    $GLOBALS["IS_NPC"]=false;
+
+infonpc
+(beings in range:Helen,Lucifer,Ogol (restrained),Jeanine,Derkeethus (restrained),Felicia,Lydia,Juniper,Celestine,Falmer Slave Nymph (hostile),Anja Iceheart,Serana,Carrot,Camilla Valerius,Sylgja,Falmer Slave Nymph (hostile),Moon River,Alva,Falmer Slave Nymph (hostile),Ina,Medea,Thonar Silver-Blood (restrained),Sofie,Hercules the Dog (restrained),Faendal,Annekke Crag-Jumper,Akomi,Kelsa Iceheart,Golldir,Jorunn,Sceolang,Daphnne,Herika,Falmer Slave Nymph (hostile),Charlotte,)
+
+" (dead)";
+" (hostile)";
+" (busy)";
+" (in combat)";
+" (far away)";
+" (restrained)";
+   
+    
     */
     // Parse the JSON data
     $rawData = DataGetCurrentPartyConf();
+
+    //error_log("GetCurrentPartyMembers: ".$rawData);
 
     $partyData = json_decode($rawData, true);
     
@@ -1078,6 +1189,8 @@ function GetCurrentPartyMembers() {
             $result['names'][] = $member['name'];
         }
     }
+    
+    $GLOBALS["current_party_members"] = $result;
     
     return $result;
 }
@@ -1141,12 +1254,23 @@ function GetCurrentLocationContext($actor) {
     global $db;
     
     // Query to fetch recent context data with focus on location information
+    /*
     $query = "SELECT location 
-              FROM eventlog 
+              FROM public.eventlog 
               WHERE (location IS NOT NULL) AND (location != '')
               AND (type = 'infoloc')
               ORDER BY gamets DESC, ts DESC, rowid DESC 
-              LIMIT 3";
+              LIMIT 5";
+    */
+    $query = "SELECT DISTINCT ON (location) 
+        location, type, data, gamets, ts, rowid 
+        FROM public.eventlog 
+        WHERE rowid IN (SELECT rowid FROM public.eventlog 
+            WHERE (location IS NOT NULL) AND (location != '') 
+            AND (TYPE IN ('infoloc','location','request')) 
+            AND (location NOT ilike '(Context location: Skyrim, outdoors, Buildings to go:none,%') 
+            ORDER BY gamets DESC, ts DESC, rowid DESC LIMIT 256  
+        ) LIMIT 7 ";
     
     $results = $db->fetchAll($query);
     
@@ -1160,7 +1284,7 @@ function GetCurrentLocationContext($actor) {
     
     // Process results to extract location information
     foreach ($results as $row) {
-        $locationString = $row["location"];
+        $locationString = str_ireplace("Buildings to go:none,", "", $row["location"]); // remove Buildings to go:none,
         
         // Match location with optional "Context" prefix, optional "new" keyword, and optional "outdoors" as part of location
         preg_match('/Context\s*(new\s*)?location:\s*([^$]+?(?:\s*,\s*outdoors)?(?=\s*[,$]))/', $locationString, $locationMatch);
@@ -1203,7 +1327,7 @@ function GetCurrentLocationContext($actor) {
                 
                 foreach ($buildingsList as $building) {
                     $building = trim($building);
-                    if (!empty($building)) {
+                    if ((!empty($building)) && ($building != 'none')) {
                         // Extract the door/passage name and destination
                         if (preg_match('/^([^(]+)\(([^)]+)\)$/', $building, $parts)) {
                             $buildings[] = [
@@ -1578,6 +1702,10 @@ function getChimVersion() {
     return getConfOptionValue("_minai_global_CHIM_version", false);
 }
 
+function getChimDllVersion() {
+    return getConfOptionValue("plugin_dll_version", false);
+}
+
 function setChimVersion($s_version = "") {
     setConfOption("_minai_global_CHIM_version", trim($s_version));
 }
@@ -1644,6 +1772,137 @@ function m_remove_both_ends($str2trim, $trim_before_separator, $trim_after_separ
     return $s_res;
 }
 
+function save_original_herika_name() {
+    $b_already_saved = (isset($GLOBALS["herika_name_backup"]) && (strlen($GLOBALS["herika_name_backup"]) > 0));// ($GLOBALS["ORIGINAL_HERIKA_NAME_SAVED"] ?? false);
+    if (!$b_already_saved) {
+        $herika = ($GLOBALS["HERIKA_NAME"] ?? '');
+        if (strlen($herika) > 0) {
+            if (($herika !== "The Narrator") && 
+                ($herika !== "Player") && 
+                ($herika !== "LLMFallback") && 
+                (stripos($herika, "Narrator") === false) && 
+                (stripos($herika, "actor") === false) && 
+                (stripos($herika, "everyone") === false) && 
+                (stripos($herika, "*") === false) && 
+                (stripos($herika, "none") === false) ) {
+                    
+                $GLOBALS["herika_name_backup"] = $herika;
+                //error_log("[util] npc=$herika SAVED - exec trace" ); // debug
+            }
+        }
+    }
+}
+
+function get_original_herika_name() {
+    $s_res = ''; //$GLOBALS["HERIKA_NAME"];
+    $b_already_saved = (isset($GLOBALS["herika_name_backup"]) && (strlen($GLOBALS["herika_name_backup"]) > 0));
+    if ($b_already_saved) {
+        $s_res = $GLOBALS["herika_name_backup"] ?? '';
+        //error_log("[util] npc=$herika RETRIEVED - exec trace" ); // debug
+    } else {
+        $herika = ($GLOBALS["HERIKA_NAME"] ?? '');
+        if (strlen($herika) > 0) {
+            if (($herika !== "The Narrator") && 
+                ($herika !== "Player") && 
+                ($herika !== "LLMFallback") && 
+                (stripos($herika, "Narrator") === false) && 
+                (stripos($herika, "actor") === false) && 
+                (stripos($herika, "everyone") === false) && 
+                (stripos($herika, "*") === false) && 
+                (stripos($herika, "none") === false) ) {
+                
+                $GLOBALS["herika_name_backup"] = $herika;
+                $s_res = $herika;
+                //error_log("[util] npc=$herika was not saved - exec trace" ); // debug
+            }
+        }
+    }
+    return $s_res;
+} 
+    
+function get_people_attribute($character_name) {
+    $s_res = '';
+    $s_name = trim($character_name);
+    if (isset($GLOBALS["CACHE_PEOPLE_ARRAY"][$s_name]))
+        $s_res = $GLOBALS["CACHE_PEOPLE_ARRAY"][$s_name];
+    return $s_res;
+}
+
+function has_busy_attribute($character_name) {
+    $b_res = false;
+    $s_name = trim($character_name);
+    if (isset($GLOBALS["CACHE_PEOPLE_ARRAY"][$s_name]))
+        $b_res = ($GLOBALS["CACHE_PEOPLE_ARRAY"][$s_name] == 'busy');
+    return $b_res;
+}
+
+function has_hostile_attribute($character_name) {
+    $b_res = false;
+    $s_name = trim($character_name);
+    if (isset($GLOBALS["CACHE_PEOPLE_ARRAY"][$s_name]))
+        $b_res = ($GLOBALS["CACHE_PEOPLE_ARRAY"][$s_name] == 'hostile');
+    return $b_res;
+}
+
+function has_dead_attribute($character_name) {
+    $b_res = false;
+    $s_name = trim($character_name);
+    if (isset($GLOBALS["CACHE_PEOPLE_ARRAY"][$s_name]))
+        $b_res = ($GLOBALS["CACHE_PEOPLE_ARRAY"][$s_name] == 'dead');
+    return $b_res;
+}
+
+function has_incombat_attribute($character_name) {
+    $b_res = false;
+    $s_name = trim($character_name);
+    if (isset($GLOBALS["CACHE_PEOPLE_ARRAY"][$s_name]))
+        $b_res = ($GLOBALS["CACHE_PEOPLE_ARRAY"][$s_name] == 'in combat');
+    return $b_res;
+}
+
+function has_faraway_attribute($character_name) {
+    $b_res = false;
+    $s_name = trim($character_name);
+    if (isset($GLOBALS["CACHE_PEOPLE_ARRAY"][$s_name]))
+        $b_res = ($GLOBALS["CACHE_PEOPLE_ARRAY"][$s_name] == 'far away');
+    return $b_res;
+}
+
+function has_restrained_attribute($character_name) {
+    $b_res = false;
+    $s_name = trim($character_name);
+    if (isset($GLOBALS["CACHE_PEOPLE_ARRAY"][$s_name]))
+        $b_res = ($GLOBALS["CACHE_PEOPLE_ARRAY"][$s_name] == 'restrained');
+    return $b_res;
+}
+
+
+
+/*
+Attributes: 
+" (dead)"
+" (hostile)"
+" (busy)"
+" (in combat)"
+" (far away)"
+" (restrained)" - in sexlab scene
+*/
+
+/*
+function setConfOption($key, $value) {
+    $l_key = $GLOBALS['db']->escape(strtolower($key));
+    if (strlen($l_key) > 0) {
+        return $GLOBALS['db']->upsertRowOnConflict(
+            'conf_opts',
+            array(
+                'id' => "{$l_key}",
+                'value' => "{$value}"
+            ),
+            'id'
+        );
+    }
+}
+*/
     
 require_once("contextbuilders/wornequipment_context.php");
-require_once("utils/init_common_variables.php");
+//require_once("utils/init_common_ variables.php");

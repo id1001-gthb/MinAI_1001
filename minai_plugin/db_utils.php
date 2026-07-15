@@ -139,6 +139,179 @@ function UpdateSpeechTableIfNotHaveEmotionFields() {
     }
 }
 
+function UpdateAuditRequestTableIfNotHaveConnectorFields() {
+    $db = $GLOBALS['db'];
+    try {
+        $query = " ALTER TABLE IF EXISTS public.audit_request ADD COLUMN IF NOT EXISTS duration NUMERIC; ";
+        $db->execQuery($query);        
+        $query = " ALTER TABLE IF EXISTS public.audit_request ADD COLUMN IF NOT EXISTS duration_chim NUMERIC; ";
+        $db->execQuery($query);        
+        $query = " ALTER TABLE IF EXISTS public.audit_request ADD COLUMN IF NOT EXISTS response jsonb; ";
+        $db->execQuery($query);        
+        $query = " ALTER TABLE IF EXISTS public.audit_request ADD COLUMN IF NOT EXISTS connector_id BIGINT; ";
+        $db->execQuery($query);        
+        //error_log("MinAI alter table 'speech' - exec trace"); //debug
+    } catch (Exception $e) {
+        // Log error but don't fail
+        error_log("Error altering 'speech' table: " . $e->getMessage());
+    }
+}
+
+//----------------------------------------------------
+// database maintenance tools
+//----------------------------------------------------
+
+function checkVersion2($tablename) {
+    $db = $GLOBALS['db'];
+    $query = "SELECT version FROM public.database_versioning WHERE tablename = '$tablename' ";
+
+    $existsColumn = $db->fetchAll($query);
+
+    if ((sizeof($existsColumn) == 0) || (!$existsColumn[0]["version"]) ) {
+        error_log("patch check: {$tablename} not found. "); 
+        return -1;
+    } else {
+        $i_ver = intval($existsColumn[0]["version"] ?? 0);
+        error_log("patch check: {$tablename} found version {$i_ver}. "); 
+        return $i_ver;
+    }
+};
+
+function updateVersion2($tablename, $version) {
+    $db = $GLOBALS['db'];
+    $db->execQuery("INSERT INTO public.database_versioning SELECT '$tablename',$version where not exists (SELECT 1 from public.database_versioning where tablename='$tablename') ");
+    $db->execQuery("UPDATE public.database_versioning set version=$version WHERE tablename='$tablename' ");
+    error_log("patch applied: {$tablename} updated to version {$version} "); //debug
+};
+
+//----------------------------------------------------
+
+function CreateView_top_connector() {
+
+    $db = $GLOBALS['db'];
+
+    if (checkVersion2("top_connector") < 20260129001) {
+        //Logger::debug(" try patch: top_connector 20260129001");
+        error_log(" try patch: top_connector 20260129001"); //debug
+
+        try {
+            $db->execQuery(" DROP VIEW IF EXISTS public.top_connector CASCADE; ");
+            $db->execQuery(" CREATE VIEW public.top_connector AS SELECT 
+            MIN(l.id) AS id, MIN(l.label) AS label, MIN(l.model) AS model, MIN(l.url) AS url, MIN(l.driver) AS driver, 
+            COUNT(l.id) AS calls_count, MIN(a.duration) AS min_time, MAX(a.duration) AS max_time 
+            FROM public.core_llm_connector l JOIN public.audit_request a ON l.id = a.connector_id 
+            WHERE (a.connector_id > 0) AND (a.result = 'Ok'::text) 
+            GROUP BY l.id, l.model; ");
+            
+            $db->execQuery(" DROP VIEW IF EXISTS public.top_connector_error CASCADE; ");
+            $db->execQuery(" CREATE VIEW public.top_connector_error AS
+            SELECT MIN(l.id) AS id,
+                   MIN(l.label) AS label,
+                   MIN(l.model) AS model,
+                   MIN(l.url) AS url,
+                   MIN(l.driver) AS driver,
+                   COUNT(l.id) AS calls_count,
+                   MIN(a.duration) AS min_time,
+                   MAX(a.duration) AS max_time
+            FROM public.core_llm_connector l
+            JOIN public.audit_request a ON l.id = a.connector_id
+            WHERE (a.connector_id > 0) AND (a.result <> 'Ok'::text)
+            GROUP BY l.id, l.model; ");
+            
+            //$db->execQuery(" ");
+            updateVersion2("top_connector", 20260129001);
+        } catch (Exception $e) {
+            error_log("patch top_connector: Error altering 'top_connector' view: " . $e->getMessage());
+        }
+    }
+    /*
+DROP VIEW IF EXISTS public.top_connector CASCADE;
+CREATE VIEW public.top_connector AS 
+  SELECT min(l.id) AS id,
+    min(l.label) AS label,
+    min(l.model) AS model,
+    min(l.url) AS url,
+    min(l.driver) AS driver,
+    COUNT(l.id) AS calls_count,
+    min(a.duration) AS min_time,
+    max(a.duration) AS max_time
+  FROM core_llm_connector l
+  JOIN audit_request a ON l.id = a.connector_id
+  WHERE (a.connector_id > 0) AND (a.result = 'Ok'::text)
+  GROUP BY l.id, l.model;
+
+
+DROP VIEW IF EXISTS public.top_connector_error CASCADE;
+CREATE VIEW public.top_connector AS
+SELECT MIN(l.id) AS id,
+       MIN(l.label) AS label,
+       MIN(l.model) AS model,
+       MIN(l.url) AS url,
+       MIN(l.driver) AS driver,
+       COUNT(l.id) AS calls_count,
+       MIN(a.duration) AS min_time,
+       MAX(a.duration) AS max_time
+FROM public.core_llm_connector l
+JOIN public.audit_request a ON l.id = a.connector_id
+WHERE (a.connector_id > 0) AND (a.result <> 'Ok'::text)
+GROUP BY l.id, l.model;
+  
+    */
+}
+
+function CreateLocationsTableIfNotExists() {
+    $db = $GLOBALS['db'];
+    try {
+        // Check if table exists first
+        $result = $db->fetchAll("SELECT to_regclass('public.locations') as exists");
+        if (!$result[0]['exists']) {
+            $db->execQuery(
+              "CREATE TABLE IF NOT EXISTS public.locations (
+                name text,
+                formid bigint
+                ); ");
+            error_log("Create table: public.locations - exec trace"); //debug
+        }
+    } catch (Exception $e) {
+        // Log error but don't fail
+        error_log("Error creating public.locations table: " . $e->getMessage());
+    }
+    /*
+    CREATE TABLE IF NOT EXISTS  public.locations (
+        name text,
+        formid bigint
+    );
+    COMMENT ON TABLE public.locations IS 'locations sent from plugin';
+    */
+}
+
+function CreateFactionsTableIfNotExists() {
+    $db = $GLOBALS['db'];
+    try {
+        // Check if table exists first
+        $result = $db->fetchAll("SELECT to_regclass('public.factions') as exists");
+        if (!$result[0]['exists']) {
+            $db->execQuery(
+              "CREATE TABLE IF NOT EXISTS public.factions (
+                name text,
+                formid text PRIMARY KEY
+                ); ");
+            error_log("Create table: public.factions - exec trace"); //debug
+        }
+    } catch (Exception $e) {
+        // Log error but don't fail
+        error_log("Error creating public.factions table: " . $e->getMessage());
+    }
+    /*
+        CREATE TABLE IF NOT EXISTS  public.factions (
+            name text,
+            formid text PRIMARY KEY
+        );
+        COMMENT ON TABLE public.factions IS 'factions sent from plugin';
+    */
+}
+
+
 //----------------------------------------------------
 // database maintenance tools
 // - autovacuum / table
@@ -148,34 +321,9 @@ function SetAutoVacuum() {
 
     $db = $GLOBALS['db'];
 
-    $checkVersion2 = function($tablename) {
-        $db = $GLOBALS['db'];
-        $query = "
-        SELECT version 
-        FROM public.database_versioning
-        WHERE tablename = '$tablename'
-        ";
-
-        $existsColumn=$db->fetchAll($query);
-
-        if (sizeof($existsColumn) == 0 || !$existsColumn[0]["version"] )
-            return -1;
-        else
-            return intval($existsColumn[0]["version"]);
-    };
-
-    $updateVersion2 = function($tablename,$version) {
-        $db = $GLOBALS['db'];
-        $db->execQuery("INSERT INTO public.database_versioning SELECT '$tablename',$version where not exists (SELECT 1 from public.database_versioning where tablename='$tablename')");
-        $db->execQuery("UPDATE public.database_versioning set version=$version WHERE tablename='$tablename'");
-        //Logger::info("TABLE $tablename updated to version $version");
-        error_log("TABLE $tablename updated to version $version"); //debug
-        
-    };
-
-    if ($checkVersion2("db_maintenance")<20251129002) {
+    if (checkVersion2("db_maintenance") < 20251129002) {
         //Logger::debug(" try patch: db_maintenance 20251129002");
-        error_log(" try patch: db_maintenance 20251129002"); //debug
+        //error_log(" try patch: db_maintenance 20251129002"); //debug
 
         try {
             $db->execQuery("DROP FUNCTION IF EXISTS public.sql_exec2(text) CASCADE");
@@ -199,14 +347,14 @@ function SetAutoVacuum() {
                 WHERE (pgc.relkind ='r') 
                 AND (pgn.nspname='public'); "); 
 
-            $updateVersion2("db_maintenance",20251129002);
+            updateVersion2("db_maintenance",20251129002);
 
         } catch (Exception $e) {
-            error_log("Error altering 'speech' table: " . $e->getMessage());
+            error_log("patch db_maintenance: Error altering 'speech' table: " . $e->getMessage());
         }
 
         //Logger::info("Applied patch db_maintenance 20251129002");
-        error_log("Applied patch db_maintenance 20251129002"); //debug
+        //error_log("Applied patch db_maintenance 20251129002"); //debug
     }
 }
 
@@ -219,9 +367,14 @@ function InitiateDBTables() {
     CreateTattooDescriptionTableIfNotExists();
     CreateItemsTableIfNotExists();
     UpdateSpeechTableIfNotHaveEmotionFields();
+    UpdateAuditRequestTableIfNotHaveConnectorFields();
+    CreateView_top_connector();
+    // fixes:
+    CreateLocationsTableIfNotExists();
+    CreateFactionsTableIfNotExists();
     // Seed default items
     SeedDefaultItems();
-    error_log("MinAI InitiateDBTables - exec trace"); //debug
+    error_log("[MinAI] InitiateDBTables - exec trace"); //debug
 }
 
 function ResetDBTables() {
@@ -237,7 +390,6 @@ function ResetDBTables() {
     CreateItemsTableIfNotExists();
     SeedDefaultItems();
 }
-
 
 
 /**

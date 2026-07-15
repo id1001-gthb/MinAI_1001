@@ -1,8 +1,20 @@
 Changelog
 
+MinAI server plugin version 2.1.3-dev8a
+---------------------------------------
+- Compatibility with CHIM v3.1.x. 
+Tested with CHIM v3.1.0, 3.1.1, 3.1.2, 3.1.3. 
+Not compatible with previous CHIM versions.
+
+
+MinAI server plugin version 2.1.3-dev7h
+---------------------------------------
+Unreleased version.
+
+
 MinAI server plugin version 2.1.3-dev7g
 ---------------------------------------
-- Compatibility with CHIM v2.4.x.
+- Compatibility with CHIM v2.5.x.
 - Player titles and achievements exposed in context: Thane, Champion, Divine deeds.
 - Updated NPCs combat state retrieval, distinction between 'searching for enemy' and 'in combat'. 
 - Dirt and Blood mod integration: updated to properly record clean state.

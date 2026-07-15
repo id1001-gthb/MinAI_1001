@@ -4,6 +4,7 @@
  * across the MinAI codebase. Load this file early in the process to ensure these values are
  * available to other components.
  */
+
 require_once("/var/www/html/HerikaServer/ext/minai_plugin/util.php");
 
 // Cache target actor
@@ -26,3 +27,5 @@ $GLOBALS["nearby"] = explode(",", GetActorValue("PLAYER", "nearbyActors", true))
 if (IsChildActor($GLOBALS['HERIKA_NAME']) || IsChildActor($GLOBALS["target"])) {
     $GLOBALS["disable_nsfw"] = true;
 }
+
+//error_log("[init_common_variables] target=".$GLOBALS["target"]." target_gender=".$GLOBALS["target_gender"]." HERIKA_NAME=".$GLOBALS["HERIKA_NAME"]." herika_gender=".$GLOBALS["herika_gender"]." ".__FILE__);

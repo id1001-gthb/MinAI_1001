@@ -5,18 +5,44 @@ require_once("../config.base.php");
 require_once("../logger.php");
 header('Content-Type: application/json');
 $path = "..".DIRECTORY_SEPARATOR."..".DIRECTORY_SEPARATOR."..".DIRECTORY_SEPARATOR;
-require_once($path . "conf".DIRECTORY_SEPARATOR."conf.php");
-require_once($path. "lib" .DIRECTORY_SEPARATOR."{$GLOBALS["DBDRIVER"]}.class.php");
+//require_once($path . "conf".DIRECTORY_SEPARATOR."conf_.php");
+
+require_once("/var/www/html/HerikaServer/lib/postgresql.class.php"); 
+
 $GLOBALS["db"] = new sql();
+
+//save_original_herika_name();
+$b_already_saved = (isset($GLOBALS["herika_name_backup"]) && (strlen($GLOBALS["herika_name_backup"]) > 0));
+if (!$b_already_saved) {
+    $herika = ($GLOBALS["HERIKA_NAME"] ?? '');
+    if (strlen($herika) > 0) {
+        if (($herika !== "The Narrator") && 
+            ($herika !== "Player") && 
+            ($herika !== "LLMFallback") && 
+            (stripos($herika, "Narrator") === false) && 
+            (stripos($herika, "actor") === false) && 
+            (stripos($herika, "everyone") === false) && 
+            (stripos($herika, "*") === false) && 
+            (stripos($herika, "none") === false) ) {
+                
+            $GLOBALS["herika_name_backup"] = $herika;
+            //error_log("[util] npc=$herika SAVED - exec trace" ); // debug
+        }
+    }
+}
+$GLOBALS["HERIKA_NAME"] = "The Narrator";
 
 // Load required files
 require_once("../util.php");
 require_once("../contextbuilders.php");
 require_once("../roleplaybuilder.php");
 require_once("../utils/init_common_variables.php");
+
+//error_log("[init_common_variables] target=".$GLOBALS["target"]." target_gender=".$GLOBALS["target_gender"]." HERIKA_NAME=".$GLOBALS["HERIKA_NAME"]." herika_gender=".$GLOBALS["herika_gender"]." ".__FILE__); //debug
+
+
 // Set narrator name and load profile if needed
-SaveOriginalHerikaName();
-$GLOBALS["HERIKA_NAME"] = "The Narrator";
+
 SetNarratorProfile();
 try {
     // Get player name from query param or use default
@@ -61,7 +87,7 @@ try {
     $bountyStatus = convertToFirstPerson(callContextBuilder('bounty', $params), $playerName, $playerPronouns);
 
     // Get nearby actors and locations
-    $nearbyActors = array_filter(array_map('trim', explode('|', DataBeingsInRange())));
+    $nearbyActors = array_filter(array_map('trim', explode('|', DataBeingsInRange2())));
     $possibleLocations = DataPosibleLocationsToGo();
 
     // Get recent context using configured value

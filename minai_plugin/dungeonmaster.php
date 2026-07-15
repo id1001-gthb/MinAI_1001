@@ -80,10 +80,10 @@ function ProcessDungeonMasterEvent($requestData) {
     }
 
     // Set up the prompts with the extracted message
-    $message = "<important_OoC_instruction>(OoC: " . trim($message) . ")</important_OoC_instruction>\n<response_guidelines>Prioritize this OoC instruction. ".
-      "If this OoC instruction demand to perform an action from <available_actions_list> execute it unconditionally. ". 
-      "If this OoC instruction requires a change in your behavior, do it now. ". 
-      "</response_guidelines>"; // that should be executed unconditionally
+    $message = "<OoC_instruction>(" . trim($message) . ")</OoC_instruction>".
+			//" <response_guidelines>Execute this OoC instruction. ".
+      //"(If this OoC instruction demand to perform an action from <available_actions_list> execute it unconditionally.) </response_guidelines> ". 
+      ""; // that should be executed unconditionally
     //minai_log("info", "dungeonmaster message: {$message}");
     SetDungeonMasterPrompts($message);
 } 

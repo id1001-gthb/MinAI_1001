@@ -5,6 +5,7 @@ require_once(__DIR__ . "/contextbuilders/system_prompt_context.php");
 require_once("util.php");
 require_once(__DIR__ . "/utils/format_util.php");
 require_once(__DIR__ . "/utils/prompt_slop_cleanup.php");
+require_once(__DIR__ . "/util_chim.php"); 
 
 function convertRelationshipStatus($targetActor) {
     $relationshipRank = intval(GetActorValue($targetActor, "relationshipRank"));
@@ -154,7 +155,7 @@ function interceptRoleplayInput() {
         $CONNECTOR = $GLOBALS["CONNECTOR"];
 
         $HERIKA_NAME = GetNameFromProfile();
-        //$HERIKA_NAME = $GLOBALS["RP_TARGET"] ?? GetOriginalHerikaName(); //GetNameFromProfile();
+        
         $originalHerikaName = $HERIKA_NAME;
         $b_narrator = (($HERIKA_NAME == "The Narrator") ? true : false);
         
@@ -233,7 +234,33 @@ Do not mention the probability and how you decided to choose the answer.
                             ($HERIKA_GOALS ?? "");
                     }
                 } else {
-                    minai_log("warning", "Profile file does not exist: " . $configPath);
+                    // take from db XMD
+                    get_NPC_data($HERIKA_NAME);
+                    $npc_data = $GLOBALS["minai_cache_npcdata"][$HERIKA_NAME];
+
+                    // Get the personality from global variables
+
+                    $HRK_PERS 	     = trim($npc_data['core'] ?? " {$herika_name} ");
+                    $HRK_BACKGROUND  = trim($npc_data['npc_static_bio'] ?? '');
+                    $HRK_PERSONALITY = trim($npc_data['personality'] ?? '');
+                    $HRK_SPEECHSTYLE = trim($npc_data['speechstyle'] ?? '');
+                    $HRK_APPEARANCE  = trim($npc_data['appearance'] ?? '');
+                    $HRK_SKILLS      = trim($npc_data['skills'] ?? '');
+                    $HRK_OCCUPATION  = trim($npc_data['occupation'] ?? '');
+                    $HRK_GOALS       = trim($npc_data['goals'] ?? '');
+
+                    $HRK_RELATIONSHIP = trim(get_relationship($herika_name, $target));                    
+
+                    $HERIKA_PERS00 = $HRK_PERS;
+                    $HERIKA_DYNAMIC00 = 
+                        $HRK_BACKGROUND . " \n" . 
+                        $HRK_PERSONALITY . " \n" . 
+                        $HRK_APPEARANCE .  " \n" . 
+                        $HRK_SPEECHSTYLE . " \n" . 
+                        $HRK_OCCUPATION . " \n" . 
+                        $HRK_SKILLS . " \n" . 
+                        $HRK_GOALS;
+                    
                 }
             } else {
                 minai_log("info", "No GET profile specified");
@@ -292,7 +319,7 @@ Do not mention the probability and how you decided to choose the answer.
         */
         
         // Get lists of valid names and locations
-        $nearbyActors = array_filter(array_map('trim', explode('|', DataBeingsInRange())));
+        $nearbyActors = array_filter(array_map('trim', explode('|', DataBeingsInRange2())));
         $possibleLocations = DataPosibleLocationsToGo();
         
         // Combine contexts

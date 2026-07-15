@@ -2,8 +2,8 @@
 function setVictimTalkPrompts($currentName) {
 
     $gender = GetGender($currentName);
-    $in0 = "(";
-    $in1 = ")";
+    $in0 = "<instruction>(";
+    $in1 = ")</instruction>";
 
     $GLOBALS["PROMPTS"]["sextalk_climaxchastity"] = [
         "cue" => [

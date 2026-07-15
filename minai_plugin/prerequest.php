@@ -6,16 +6,63 @@
  * 
  * This file is included at the beginning of each request to perform initialization and preparation.
  */
-require_once("utils/metrics_util.php");
-require_once("config.php");
-require_once("util.php");
-require_once("contextbuilders.php");
-require_once("prompts/info_prompts.php");
+
+if ($gameRequest[0] == 'ext_nsfw_physics_raw') {
+    terminate();
+}
+if ($gameRequest[0] == 'physics_raw') {
+    terminate();
+}
+
+require_once(__DIR__."/utils/metrics_util.php");
+require_once(__DIR__."/config.php");
+require_once(__DIR__."/util.php");
+require_once(__DIR__."/contextbuilders.php");
+require_once(__DIR__."/prompts/info_prompts.php");
 
 //error_log("-- prerequest -- ");
 
-//$GLOBALS["ENFORCE_ACTIONS_  PROMPT"] = true;
-//SaveOriginalHerikaName();
+save_original_herika_name();
+
+// Initialize common variables
+require_once(__DIR__."/utils/init_common_variables.php");
+//error_log("[init_common_variables] target=".$GLOBALS["target"]." target_gender=".$GLOBALS["target_gender"]." HERIKA_NAME=".$GLOBALS["HERIKA_NAME"]." herika_gender=".$GLOBALS["herika_gender"]." ".__FILE__); //debug
+
+//-------------------------------------------------
+$GLOBALS["HTTP_TIMEOUT"] = 30;
+$GLOBALS["minai_processing_input"] = false;
+
+//-------------------------------------------------
+
+//Comma-separated list of magic event names to exclude from logging (e.g. 'Administer Mixture, [BFCO-AttackSwingFX] 0.5/1.5, Healing').
+//$MAGIC_EVENT_BLACKLIST='Hailstorm,Descending Light,Mass Match Maker - Gang Bang Target,Vigilant,';
+if (isset($GLOBALS["MAGIC_EVENT_BLACKLIST"])) {
+    if (stripos($GLOBALS["MAGIC_EVENT_BLACKLIST"], 'SneakFix') === false) {
+        $GLOBALS["MAGIC_EVENT_BLACKLIST"] .= 'SneakFix,';
+    } elseif (stripos($GLOBALS["MAGIC_EVENT_BLACKLIST"], 'Vigilant') === false) { 
+        $GLOBALS["MAGIC_EVENT_BLACKLIST"] .= 'Vigilant,';
+    } elseif (stripos($GLOBALS["MAGIC_EVENT_BLACKLIST"], 'Descending Light') === false) { 
+        $GLOBALS["MAGIC_EVENT_BLACKLIST"] .= 'Descending Light,';
+    } elseif (stripos($GLOBALS["MAGIC_EVENT_BLACKLIST"], 'Hailstorm') === false) { 
+        $GLOBALS["MAGIC_EVENT_BLACKLIST"] .= 'Hailstorm,';
+    } elseif (stripos($GLOBALS["MAGIC_EVENT_BLACKLIST"], 'Mass Match Maker - Gang Bang Target') === false) { 
+        $GLOBALS["MAGIC_EVENT_BLACKLIST"] .= 'Mass Match Maker - Gang Bang Target,';
+    } elseif (stripos($GLOBALS["MAGIC_EVENT_BLACKLIST"], "[BFCO-AttackSwingFX] 0.5/1.5") === false) { 
+        $GLOBALS["MAGIC_EVENT_BLACKLIST"] .= "[BFCO-AttackSwingFX] 0.5/1.5,";
+    } elseif (stripos($GLOBALS["MAGIC_EVENT_BLACKLIST"], 'Overflowing Cup') === false) { 
+        $GLOBALS["MAGIC_EVENT_BLACKLIST"] .= 'Overflowing Cup,';
+    } elseif (stripos($GLOBALS["MAGIC_EVENT_BLACKLIST"], "Warrior's Flame") === false) { 
+        $GLOBALS["MAGIC_EVENT_BLACKLIST"] .= "Warrior's Flame,";
+    //} elseif (stripos($GLOBALS["MAGIC_EVENT_BLACKLIST"], '') === false) { 
+    //    $GLOBALS["MAGIC_EVENT_BLACKLIST"] .= ',';
+    //} elseif (stripos($GLOBALS["MAGIC_EVENT_BLACKLIST"], '') === false) { 
+    //    $GLOBALS["MAGIC_EVENT_BLACKLIST"] .= ',';
+    }
+} else {
+    $GLOBALS["MAGIC_EVENT_BLACKLIST"] = "Hailstorm,Descending Light,Mass Match Maker - Gang Bang Target,Vigilant,SneakFix,[BFCO-AttackSwingFX] 0.5/1.5,Overflowing Cup,Warrior's Flame,";
+}
+
+//-------------------------------------------------
 
 if (isset($GLOBALS["TTS_FFMPEG_FILTERS"]["tempo"])) {
 	$s_tempo = $GLOBALS["TTS_FFMPEG_FILTERS"]["tempo"];  
@@ -33,7 +80,40 @@ if (isset($GLOBALS["TTS_FFMPEG_FILTERS"]["tempo"])) {
 if (!isset($GLOBALS["db"]))
 	$GLOBALS["db"] = new sql();
 
+
 $GLOBALS["speaker"] = $GLOBALS["HERIKA_NAME"];
+
+$GLOBALS["EXT_CONTEXT_SQL_FILTER1"] = " AND type<>'minai_storeitem' AND type<>'minai_storeitem_batch' AND type<>'ext_nsfw_physics_raw' "; 
+
+$actor = $GLOBALS["HERIKA_NAME"] ?? '';
+$s_input = "'inputtext', 'inputtext_s', 'ginputtext', 'ginputtext_s', 'narrator_inputtext'"; // add also input modes 'inputtext', 'inputtext_s', 'ginputtext', 'ginputtext_s', 'narrator_inputtext', 'chat', 'prechat', 'rechat', 'continue', 'continue_group'
+
+$GLOBALS["EXT_CONTEXT_SQL_FILTER2"] = " OR type ILIKE 'info\_%' OR type ILIKE 'ext\_%' OR (type in ({$s_input})) ";
+
+$b_actor = (strlen($actor) > 0); 
+if ($b_actor) {
+	$actorEscaped=$GLOBALS["db"]->escape($actor);
+	//$playerEscaped=$GLOBALS["db"]->escape($GLOBALS["PLAYER_NAME"] ?? '');
+
+	$GLOBALS["EXT_CONTEXT_SQL_FILTER2"] .= " OR (
+		( (type = 'chat') AND (
+			(party ILIKE '%{$actorEscaped}%') OR 
+			(data ILIKE '%{$actorEscaped}:%') OR 
+			(data ILIKE '%(talking to {$actorEscaped})%') OR  
+			(data ILIKE '%(speaking to {$actorEscaped})%') OR  
+			(data ILIKE '%(shouting to {$actorEscaped})%') OR  
+			(data ILIKE '%(speaking loudly to {$actorEscaped})%') 
+		)) 
+	) "; // whispering to / talking to / shouting to / speaking loudly to
+}
+
+
+/*
+$GLOBALS["EXT_CONTEXT_SQL_FILTER1"] = "  "; 
+$GLOBALS["EXT_CONTEXT_SQL_FILTER2"] = "  "; 
+*/
+
+//-------------------------------------------------
 
 // Cache target actor
 $GLOBALS["target"] = GetTargetActor();
@@ -41,10 +121,62 @@ $GLOBALS["target_gender"] = GetGender($GLOBALS["target"]); //Is Female($GLOBALS[
 $GLOBALS["target_pronouns"] = GetActorPronouns($GLOBALS["target"]);
 
 //if (!empty($GLOBALS["RANDOM_NARATION"]) && $GLOBALS["RANDOM_NARATION"] && $gameRequest[0] === "rechat"
-if ((IsRadiant()) || (IsSexActive())) {
+
+	//"RECHAT_ALLOW_ACTIONS" = true;
+	/*
+	
+    "RPG_COMMENTS",
+    "RPG_COMMENTS_CHANCE",
+    "EVENT_TYPE_FILTER",
+    "GROUND_ITEMS_DESCRIPTIONS_ONLY",
+    "INVENTORY_ITEMS_DESCRIPTIONS_ONLY",
+
+    "SCENE_CLASSIFIER_ENABLED",
+
+    "RECHAT_ALLOW_ACTIONS",
+    "RECHAT_MODE",
+    "ENFORCE_STRICT_RECHAT_RESPONSE",
+    "OPEN_RECHAT",
+    "RANDOM_NARATION",
+    "RANDOM_NARATION_CHANCE",
+    "RANDOM_NARRATION_COOLDOWN",
+	*/
+
+if (IsRadiant()) {
 	//error_log(" Radiant - exec trace "); //debug
+	//SetRadiance(0, 0); // Disable rechat during radiant conversations, as this is handled by MinAI's controller in-game
+	$GLOBALS["RECHAT_H"] = 0;
+    $GLOBALS["RECHAT_P"] = 0;
+	$GLOBALS["BORED_EVENT"] = 0;
 	$GLOBALS["BORED_EVENT_SERVERSIDE"] = false; // MinAI radiant will suspend CHIM bored ss event
+	$GLOBALS["ALLOW_NARRATOR_BORED_EVENTS"] = false;
+    $GLOBALS["ALLOW_NARRATOR_BORED_EVENTS_CHANCE"] = 0;
+
+    //"RPG_COMMENTS"
+
+    $GLOBALS["RPG_COMMENTS_CHANCE"] = 0;
+
 	$GLOBALS["RANDOM_NARATION"] = false;
+
+	$GLOBALS["GROUND_ITEMS_DESCRIPTIONS_ONLY"] = true;
+	$GLOBALS["INVENTORY_ITEMS_DESCRIPTIONS_ONLY"] = true;
+	$GLOBALS["DISABLE_REANIMATION_TRACKING"] = true;
+
+}
+
+if (IsSexActive()) {
+	$GLOBALS["RECHAT_H"] = 2;
+	$GLOBALS["RECHAT_P"] = 33;
+	$GLOBALS["BORED_EVENT"] = 33;
+	$GLOBALS["DETECT_MAGIC_EVENT"] = false;
+	$GLOBALS["HIDE_AMBIENT_COMBAT"] = true;
+	//"RPG_COMMENTS"
+	$GLOBALS["RPG_COMMENTS_CHANCE"] = 15;
+	$GLOBALS["RANDOM_NARATION_CHANCE"] = 15;
+	$GLOBALS["GROUND_ITEMS_DESCRIPTIONS_ONLY"] = true;
+	$GLOBALS["INVENTORY_ITEMS_DESCRIPTIONS_ONLY"] = true;
+	$GLOBALS["DISABLE_REANIMATION_TRACKING"] = true;
+    $GLOBALS["ALLOW_NARRATOR_BORED_EVENTS_CHANCE"] = 15;
 }
 
 if ((!isset($GLOBALS["action_prompts"]["normal_scene"])) ||
@@ -191,31 +323,13 @@ if (isset($GLOBALS["minai_skip_processing"]) && $GLOBALS["minai_skip_processing"
 minai_start_timer('prerequest_php', 'MinAI');
 //---------------------------------------
 
-$GLOBALS["minai_processing_input"] = false;
-
-if (IsSexActive()) {
-	//SetRadiance(0, 0); // Disable rechat during radiant conversations, as this is handled by MinAI's controller in-game
-	$GLOBALS["BORED_EVENT_SERVERSIDE"] = false; // MinAI radiant will suspend CHIM bored sside event
-	$GLOBALS["RANDOM_NARATION"] = false;
-} else {
-	//CheckRechat(3, 50);
-}
-
-if (IsRadiant()) {
-	SetRadiance(0, 0); // Disable rechat during radiant conversations, as this is handled by MinAI's controller in-game
-	$GLOBALS["BORED_EVENT_SERVERSIDE"] = false; // MinAI radiant will suspend CHIM bored sside event
-} else {
-	CheckRechat(3, 50);
-}
-
-SaveOriginalHerikaName();
 SetNarratorProfile();
 
 // If talking to the narrator, force it to respond.
 if (IsEnabled($GLOBALS["PLAYER_NAME"], "isTalkingToNarrator") && isPlayerInput() ) {
     minai_log("info", "Forcing herika_name to the narrator: Is talking to narrator");
     SetEnabled($GLOBALS["PLAYER_NAME"], "isTalkingToNarrator", false);
-	SaveOriginalHerikaName();
+	save_original_herika_name();
     $GLOBALS["HERIKA_NAME"] = "The Narrator";
     $GLOBALS["minai_processing_input"] = true;
     $GLOBALS["using_self_narrator"] = true;
@@ -244,7 +358,7 @@ if (IsEnabled($GLOBALS["PLAYER_NAME"], "isSinging")) {
 }
 
 
-require_once("functions/deviousnarrator.php");
+require_once(__DIR__."/functions/deviousnarrator.php");
 if (ShouldUseDeviousNarrator()) {
     SetDeviousNarrator();
 }

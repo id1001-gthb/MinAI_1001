@@ -112,10 +112,10 @@ function cleanupSlop($contextData) {
                         $arr_extract = json_decode($s_json, true);
                         //error_log(" json found: $s_json - exec trace " . print_r($arr_extract, true) ); //debug
                         if (isset($arr_extract)) {
-                            $msg = trim($arr_extract['message'] ?? "");
-                            $speaker = $arr_extract['character'] ?? "";
-                            $action = $arr_extract['action'] ?? "";
-                            $target = $arr_extract['target'] ?? "";
+                            $msg = trim($arr_extract["message"] ?? "");
+                            $speaker = $arr_extract["character"] ?? "";
+                            $action = $arr_extract["action"] ?? "";
+                            $target = $arr_extract["target"] ?? "";
                             if (strlen($msg) > 0 ) {
                                 $entry['role'] == 'user';
                                 $originalContent = $speaker . ": " . $msg;
@@ -163,10 +163,21 @@ function cleanupSlop($contextData) {
             if ($line_length < 1) 
                 continue;
 
+            /*
+                $ERROR_OPENAI="Didn't hear you, can you repeat?";								// Say something logical, as this response will be pushed in next call.
+                $ERROR_OPENAI_REQLIMIT="Be quiet, I'm having a flashback, give me a minute";	// Say something logical, as this response will be pushed in next call.
+                $ERROR_OPENAI_POLICY="I can't think clearly now...";	            
+            */
             if (!(strpos($sl_line, 't hear you, can you repeat?') === false)) {
                 continue;
             } 
-            
+            if (!(strpos($sl_line, 'm having a flashback, give me a minute') === false)) {
+                continue;
+            } 
+            if (!(strpos($sl_line, "i can't think clearly now...") === false)) {
+                continue;
+            } 
+
             if (!(strpos($sl_line, ' about the ongoing conversation') === false)) { // (... responds to ... about the ongoing conversation)
                 continue;
             }
@@ -184,12 +195,23 @@ function cleanupSlop($contextData) {
             if ((!(strpos($sl_line, 'quest updated ') === false)) && (!(strpos($sl_line, ' new objetive: ') === false)))  { // this spamming with entire quests list; there are better options to see only current quests
                 continue;
             }
+            if ((!(strpos($sl_line, 'quest updated ') === false)) && (!(strpos($sl_line, ' new objective: ') === false)))  { // this spamming with entire quests list; there are better options to see only current quests
+                continue;
+            }
 
             //'(Context new location: Mistwatch outdoors ,Hold: Eastmarch, current date Day name: Tirdas, Hour: 7:37 AM, Day Number: 30, Month: Heartfire, 4th Era, Year: 201, current weather: cloudy,)'
             if (!(strpos($sl_line, '(context new location: ') === false))  { 
                 continue;
             }
 
+            // @partial@  @Initial@ @final@ @Skyrim.esm@
+            if ((stripos($sl_line, "@skyrim.esm@") !== false) || 
+                (stripos($sl_line, "@initial@") !== false) || 
+                (stripos($sl_line, "@partial@") !== false) || 
+                (stripos($sl_line, "@final@") !== false) ) { 
+                    continue;
+            }
+            
             if ($line_length < 50) {
 
                 if (!(strpos($sl_line, ' found ') === false)) {
@@ -222,7 +244,52 @@ function cleanupSlop($contextData) {
                 if (!(strpos($sl_line, '.use tool calling.') === false)) { //.USE TOOL CALLING.
                     continue;
                 }
-
+                /*
+                "combatGrunts": [
+                        "Unff!",
+                        "Argh!",
+                        "Off!",
+                        "Ugh!",
+                        "Gah!",
+                        "Oof!",
+                        "Urgh!",
+                        "Ngh!",
+                        "Aah!",
+                        "Ouch!",
+                        "Grr!",
+                        "Hah!",
+                        "Huh!",
+                        "Hmm!",
+                        "Oof",
+                        "Argh",
+                        "Unff",
+                        "Off",
+                        "Ugh",
+                        "Gah",
+                        "Aah",
+                        "Ouch",
+                        "Hah",
+                        "Arghhh!",
+                        "Yarghhh!",
+                        "Rrrghhh!",
+                        "Uuuuhhhnnnn... aaarrrghhh...",
+                        "Ooohhhh, ahhhrrrghhhh... uuuuggghhh.",
+                        "Yrrrgh!",
+                        "Weergh!",
+                        "Yeagh!",
+                        "Hyargh!",
+                        "Nyyarrggh!",
+                        "Yearrgh!",
+                        "Ah...",
+                        "Hmph.",
+                        "Hhyyarargghhhh!",
+                        "Aaaayyyaarrrrgghh!",
+                        "Rrrraaaaarrggghhhh!",
+                        "Ahhhhh!",
+                        "Heh heh...",
+                        "Grrargh!"
+                    ]                
+                */
                 if (!(strpos($sl_line, ': huh? ...)') === false)) {
                     continue;
                 }
@@ -275,6 +342,11 @@ function cleanupSlop($contextData) {
                 if (!(strpos($sl_line, '- happened recently -') === false)) {
                     continue;
                 }
+                //--- a while ago ---
+                if (!(strpos($sl_line, '- a while ago -') === false)) {
+                    continue;
+                }
+
                 if (!(strpos($sl_line, ': huh?') === false)) {
                     continue;
                 }
@@ -315,36 +387,35 @@ function cleanupSlop($contextData) {
                     continue;
                 }
 
-                // 2x FAMILIAR DIED
-                if (!(strpos($sl_line, 'familiar died') === false)) {
+                // 'FAMILIAR DIED' 'Nx FAMILIAR DIED'
+                if (strpos($sl_line, 'familiar died') !== false) {
                     continue;
                 }
                 // Sheep died
-                if ($sl_line == 'sheep died') {
+                if (strpos($sl_line, 'sheep died') !== false) {
                     continue;
                 }
 
-                if ($sl_line == 'goat died') {
+                if (strpos($sl_line, 'goat died') !== false) {
                     continue;
                 }
                 //Rabbit died
-                if ($sl_line == 'rabbit died') {
+                if (strpos($sl_line, 'rabbit died') !== false) {
+                    continue;
+                }
+                if (strpos($sl_line, 'elk died') !== false) {
                     continue;
                 }
 
-                if ($sl_line == 'elk died') {
+                if (strpos($sl_line, 'deer died') !== false) {
                     continue;
                 }
 
-                if ($sl_line == 'deer died') {
+                if (strpos($sl_line, 'cow died') !== false) {
                     continue;
                 }
 
-                if ($sl_line == 'cow died') {
-                    continue;
-                }
-
-                if ($sl_line == 'crab died') {
+                if (strpos($sl_line, 'crab died') !== false) {
                     continue;
                 }
 

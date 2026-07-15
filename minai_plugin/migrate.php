@@ -2,10 +2,10 @@
 
 $pluginPath = str_replace("/api","", getcwd());
 $path = str_replace("/ext/minai_plugin","", $pluginPath);
-require_once($path . "/conf".DIRECTORY_SEPARATOR."conf.php");
+//require_once($path . "/conf".DIRECTORY_SEPARATOR."conf_.php");
 require_once("logger.php");
 require_once("db_utils.php");
-require_once("$path/lib/{$GLOBALS["DBDRIVER"]}.class.php");
+require_once("/var/www/html/HerikaServer/lib/postgresql.class.php"); 
 if (!isset($GLOBALS["db"])) {
     $GLOBALS["db"] = new sql();
 }

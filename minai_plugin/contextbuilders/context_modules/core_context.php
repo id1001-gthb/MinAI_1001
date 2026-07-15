@@ -7,6 +7,7 @@
 
 require_once(__DIR__ . "/../../config.php");
 require_once(__DIR__ . "/../../util.php");
+require_once(__DIR__ . "/../../util_chim.php"); 
 require_once(__DIR__ . "/../system_prompt_context.php");
 
 /**
@@ -142,44 +143,76 @@ function BuildRumorsContext($params) {
 function BuildPersonalityContext($params) {
     $herika_name = $params['herika_name'];
     $is_self_narrator = isset($params['is_self_narrator']) ? $params['is_self_narrator'] : false;
-    $player_name = isset($params['player_name']) ? $params['player_name'] : "";
-    $target = isset($params['target']) ? $params['target'] : "";
+    $player_name = $params['player_name'] ?? "";
+    $target = $params["target"] ?? "";
 
 
     if ($herika_name == $target) {
         return "";
     }
     
-    // Get the personality from global variables
-    $herika_pers = ($GLOBALS["HERIKA_PERS"] ?? "");
+    get_NPC_data($herika_name);
+    if (isset($GLOBALS["minai_cache_npcdata"][$herika_name]))
+        $npc_data = $GLOBALS["minai_cache_npcdata"][$herika_name];
+    else 
+        return "";
     
-    if (isset($GLOBALS['HERIKA_BACKGROUND']) && (trim($GLOBALS['HERIKA_BACKGROUND']) > "")) { // core_npc_master.npc_static_bio
-        $herika_pers .= "\n\n<personality_background>\n## {$herika_name} Background \n" . trim($GLOBALS['HERIKA_BACKGROUND']) . "\n</personality_background>\n";
+    // Get the personality from global variables
+
+    $HRK_PERS 	     = $npc_data['core'] ?? "You are {$herika_name}. ";
+    $HRK_BACKGROUND  = trim($npc_data['npc_static_bio'] ?? '');
+    $HRK_PERSONALITY = trim($npc_data['personality'] ?? '');
+    $HRK_SPEECHSTYLE = trim($npc_data['speechstyle'] ?? '');
+    $HRK_APPEARANCE  = trim($npc_data['appearance'] ?? '');
+    $HRK_SKILLS      = trim($npc_data['skills'] ?? '');
+    $HRK_OCCUPATION  = trim($npc_data['occupation'] ?? '');
+    $HRK_GOALS       = trim($npc_data['goals'] ?? '');
+
+    $HRK_RELATIONSHIP = "";// trim(get_relationship($herika_name, $target));
+    
+    //$OGHMA_KNOWLEDGE_TAGS = $npc_data['oghma_knowledge_tags'] ?? '';
+
+    $herika_pers = $HRK_PERS;
+    //if (str_starts_with($herika_pers,'Roleplay as ')) {
+    //    $herika_pers = substr($herika_pers, 11);
+    //}
+        
+    if ($HRK_BACKGROUND > "") { // core_npc_master.npc_static_bio
+        $herika_pers .= "\n\n<personality_core>\n## {$herika_name} personality core \n" . $HRK_BACKGROUND . "\n</personality_core>\n";
     }
-    if (isset($GLOBALS['HERIKA_PERSONALITY']) && (trim($GLOBALS['HERIKA_PERSONALITY']) > "")) { // core_npc_master.personality 
-        $herika_pers .= "\n\n<personality_core_traits>\n## Personality core traits, behavioral patterns \n" . trim($GLOBALS['HERIKA_PERSONALITY']) . "\n</personality_core_traits>\n";
+    if ($HRK_PERSONALITY > "") { // core_npc_master.personality 
+        $herika_pers .= "\n\n<personality_main_traits>\n## {$herika_name} personality main traits, behavioral patterns \n" . $HRK_PERSONALITY . "\n</personality_main_traits>\n";
     }
-    if (isset($GLOBALS['HERIKA_SPEECHSTYLE']) && (trim($GLOBALS['HERIKA_SPEECHSTYLE']) > "")) { // core_npc_master.speechstyle
-        $herika_pers .= "\n\n<speech_style>\n## Speech style \n" . trim($GLOBALS['HERIKA_SPEECHSTYLE']) . "\n</speech_style>\n";
+    if ($HRK_SPEECHSTYLE > "") { // core_npc_master.speechstyle
+        $herika_pers .= "\n\n<speech_style>\n## {$herika_name} speech style \n" . $HRK_SPEECHSTYLE . "\n</speech_style>\n";
     }
-    if (isset($GLOBALS['HERIKA_APPEARANCE']) && (trim($GLOBALS['HERIKA_APPEARANCE']) > "")) { // core_npc_master.appearance
-        $herika_pers .= "\n\n<personality_appearance>\n## Appearance \n" . trim($GLOBALS['HERIKA_APPEARANCE']) . "\n</personality_appearance>\n";
+    if ($HRK_APPEARANCE > "") { // core_npc_master.appearance
+        $herika_pers .= "\n\n<personality_appearance>\n## {$herika_name} appearance \n" . $HRK_APPEARANCE . "\n</personality_appearance>\n";
     }
-    if (isset($GLOBALS['HERIKA_SKILLS']) && (trim($GLOBALS['HERIKA_SKILLS']) > "")) { // core_npc_master.skills
-        $herika_pers .= "\n\n<personality_skills>\n## Skills \n" . StrCleanBullets(trim($GLOBALS['HERIKA_SKILLS'])) . "\n</personality_skills>\n";
+    if ($HRK_SKILLS > "") { // core_npc_master.skills
+        $herika_pers .= "\n\n<personality_skills>\n## {$herika_name} skills \n" . StrCleanBullets($HRK_SKILLS) . "\n</personality_skills>\n";
     }
-    if (isset($GLOBALS['HERIKA_OCCUPATION']) && (trim($GLOBALS['HERIKA_OCCUPATION']) > "")) { // core_npc_master.occupation
-        $herika_pers .= "\n\n<personality_occupation>\n## Occupation \n" . trim($GLOBALS['HERIKA_OCCUPATION']) . "\n</personality_occupation>\n";
+    if ($HRK_OCCUPATION > "") { // core_npc_master.occupation
+        $herika_pers .= "\n\n<personality_occupation>\n## {$herika_name} occupation \n" . $HRK_OCCUPATION . "\n</personality_occupation>\n";
     }
-    if (isset($GLOBALS['HERIKA_GOALS']) && (trim($GLOBALS['HERIKA_GOALS']) > "")) { // core_npc_master.goals
-        $herika_pers .= "\n\n<personality_goals>\n## Goals\n" . StrCleanBullets(trim($GLOBALS['HERIKA_GOALS'])) . "\n</personality_goals>\n";
+    if ($HRK_GOALS > "") { // core_npc_master.goals
+        $herika_pers .= "\n\n<personality_goals>\n## {$herika_name} goals\n" . StrCleanBullets($HRK_GOALS) . "\n</personality_goals>\n";
     }
-    if (isset($GLOBALS['HERIKA_RELATIONSHIPS']) && (trim($GLOBALS['HERIKA_RELATIONSHIPS']) > "")) { // core_npc_master.relationships
-        $herika_pers .= "\n\n<personality_relationships>\n## Relationships, social connections\n" . StrCleanBullets(trim($GLOBALS['HERIKA_RELATIONSHIPS'])) . "\n</personality_relationships>\n";
+    if ($HRK_RELATIONSHIP > "") { // former core_npc_master.relationships
+        $herika_pers .= "\n\n<personality_relationships>\n## {$herika_name} relationships, social connections\n" . StrCleanBullets($HRK_RELATIONSHIP) . "\n</personality_relationships>\n";
     }
     // ------------------
-    //$GLOBALS["dynamicBiography"] - $middle_term_memory
-    if (isset($GLOBALS['middle_term_memory']) && (trim($GLOBALS['middle_term_memory']) > "")) { // core_npc_master.relationships
+    //HERIKA_DYNAMIC
+    //if (isset($GLOBALS['HERIKA_DYNAMIC']) && (trim($GLOBALS['HERIKA_DYNAMIC']) > "")) { // HERIKA_DYNAMIC
+    //    $herika_pers .= "\n\n<personality_dynamic>\n## Current updated personality\n" . StrCleanBullets(trim($GLOBALS['HERIKA_DYNAMIC'])) . 
+    //    "\n</personality_dynamic>\n";
+    
+ //PHP Parse error:  Unclosed '{' on line 143 does not match ')' in /var/www/html/HerikaServer/ext/minai_plugin/contextbuilders/context_modules/core_context.php on line 198 [19:17:17 12.07.26] [error]   
+    //}
+    
+    //$GLOBALS["dynamicBiography"] - $middle_term_memory middle_term_enabled
+    $b_mtmemory = $GLOBALS["MIDDLE_TERM_MEMORY_ENABLED"] ?? false;
+    if ($b_mtmemory && isset($GLOBALS['middle_term_memory']) && (trim($GLOBALS['middle_term_memory']) > "")) { // 
         $herika_pers .= "\n\n<middle_term_memory>\n## Middle term memory\n" . (trim($GLOBALS['middle_term_memory'])) . "\n</middle_term_memory>\n";
     }
     
@@ -192,11 +225,6 @@ function BuildPersonalityContext($params) {
         $herika_pers .= "\n\n<personality_group_details>\n## Group related details\n" . trim($GLOBALS["PROFILE_PROMPT"]) . "\n</personality_group_details>\n";
     }
     
-    
-    if (empty($herika_pers)) {
-        return "";
-    }
-    
     return trim($herika_pers);
 }
 
@@ -207,7 +235,7 @@ function BuildPersonalityContext($params) {
  * @return string Formatted combat context
  */
 function BuildCombatContext($params) {
-    $target = $params['target'];
+    $target = $params["target"];
     $ret = "";
     
     // Add combat information if available
@@ -262,7 +290,7 @@ function BuildInteractionContext($params) {
     if ($GLOBALS["HERIKA_NAME"] != $herika_name) {
         return "";
     }
-    $target = $params['target'];
+    $target = $params["target"];
     $is_self_narrator = isset($params['is_self_narrator']) ? $params['is_self_narrator'] : false;
     $player_name = isset($params['player_name']) ? $params['player_name'] : "";
     
@@ -417,6 +445,8 @@ function BuildPlayerAchievementsContext($playername) {
             if ($nk > 0) {
                 for ($k = 0; $k < $nk; $k++) {
                     $s_k = $keywords[$k];
+                    if ($s_k == 'Dibella') 
+                        $s_k = $s_k . ' - when he talks to them, women feel an irresistible attraction.';
                     $s_agent .= "- Agent of {$s_k}\n";
                 }                
             }
@@ -521,7 +551,7 @@ function BuildPlayerBackgroundContext($params) {
  */
 function BuildDynamicStateContext($params) {
     $herika_name = $params['herika_name'];
-    $target = isset($params['target']) ? $params['target'] : "";
+    $target = isset($params["target"]) ? $params["target"] : "";
     
     // Only show dynamic state for the character speaking
     if ($herika_name == $target) {
@@ -568,7 +598,7 @@ function BuildDynamicStateContext($params) {
  */
 function BuildCurrentTaskContext($params) {
     $herika_name = $params['herika_name'];
-    $target = isset($params['target']) ? $params['target'] : "";
+    $target = isset($params["target"]) ? $params["target"] : "";
     // Only show current task for the character speaking
     if ($herika_name == $target) {
         return "";

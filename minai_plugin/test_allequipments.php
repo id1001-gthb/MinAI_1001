@@ -7,18 +7,18 @@ error_reporting(E_ALL);
 $configFilepath = __DIR__ . DIRECTORY_SEPARATOR . ".." . DIRECTORY_SEPARATOR . ".." . DIRECTORY_SEPARATOR . "conf" . DIRECTORY_SEPARATOR;
 $rootEnginePath = __DIR__ . DIRECTORY_SEPARATOR . ".." . DIRECTORY_SEPARATOR . ".." . DIRECTORY_SEPARATOR;
 
-if (!file_exists($configFilepath . "conf.php")) {
-  @copy($configFilepath . "conf.sample.php", $configFilepath . "conf.php");   // Defaults
+/* if (!file_exists($configFilepath . "conf_.php")) {
+  @copy($configFilepath . "conf.sample.php", $configFilepath . "conf_.php");   // Defaults
   if (!file_exists($rootEnginePath . "data" . DIRECTORY_SEPARATOR . "mysqlitedb.db")) {
     require($rootEnginePath . "ui" . DIRECTORY_SEPARATOR . "cmd" . DIRECTORY_SEPARATOR . "install-db.php");
   }
   die(header("Location: conf_wizard.php"));
-}
+}  */
 
-require_once($rootEnginePath . "conf" . DIRECTORY_SEPARATOR . "conf.php");
-require_once($rootEnginePath . "lib" . DIRECTORY_SEPARATOR . "{$GLOBALS["DBDRIVER"]}.class.php");
+//require_once($rootEnginePath . "conf" . DIRECTORY_SEPARATOR . "conf_.php");
+require_once("/var/www/html/HerikaServer/lib/postgresql.class.php"); 
 
-print("dbdriver: " . $GLOBALS["DBDRIVER"] . "\n");
+//print("dbdriver: " . $GLOBALS["DB DRIVER"] . "\n");
 
 $GLOBALS['HERIKA_NAME'] = "Herika";
 

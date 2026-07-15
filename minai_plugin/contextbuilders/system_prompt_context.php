@@ -296,10 +296,10 @@ class ContextBuilderRegistry {
 
         $sample = "";
         $params = [
-            'herika_name' => isset($GLOBALS["HERIKA_NAME"]) ? $GLOBALS["HERIKA_NAME"] : "Character",
-            'player_name' => isset($GLOBALS["PLAYER_NAME"]) ? $GLOBALS["PLAYER_NAME"] : "Player",
-            'target' => isset($GLOBALS["target"]) ? $GLOBALS["target"] : "Player",
-            'is_self_narrator' => false
+            "herika_name" => isset($GLOBALS["HERIKA_NAME"]) ? $GLOBALS["HERIKA_NAME"] : "Character",
+            "player_name" => isset($GLOBALS["PLAYER_NAME"]) ? $GLOBALS["PLAYER_NAME"] : "Player",
+            "target" => isset($GLOBALS["target"]) ? $GLOBALS["target"] : "Player",
+            "is_self_narrator" => false
         ];
         
         // Call each builder to get content
@@ -409,16 +409,16 @@ function BuildSystemPrompt() {
         
     } else {
         // Include both primary and target in normal mode
-        $actors['primary'] = $herika_name;
-        $actors['target'] = $target;
+        $actors["primary"] = $herika_name;
+        $actors["target"] = $target;
     }
 
     // Common parameters to pass to all builders
     $params = array(
-        'herika_name' => $herika_name,
-        'player_name' => $player_name,
-        'target' => $target,
-        'is_self_narrator' => $is_self_narrator
+        "herika_name" => $herika_name,
+        "player_name" => $player_name,
+        "target" => $target,
+        "is_self_narrator" => $is_self_narrator
     );
 
     // Define the per-actor sections and their headers
@@ -919,11 +919,11 @@ function callContextBuilder($builderId, $params = []) {
     $registry = ContextBuilderRegistry::getInstance();
     $builder = $registry->getBuilder($builderId);
     // Set default values for missing parameters using PLAYER_NAME
-    if (!isset($params['herika_name']) || !isset($params['target']) || !isset($params['player_name'])) {
+    if (!isset($params['herika_name']) || !isset($params["target"]) || !isset($params['player_name'])) {
         $defaultName = $GLOBALS["PLAYER_NAME"];
         $params = array_merge([
             'herika_name' => $defaultName,
-            'target' => $defaultName,
+            "target" => $defaultName,
             'player_name' => $defaultName
         ], $params);
     }
@@ -968,11 +968,11 @@ function getHashtagMap($params = []) {
     $registry = ContextBuilderRegistry::getInstance();
     
     // Set default values for missing parameters
-    if (!isset($params['herika_name']) || !isset($params['target']) || !isset($params['player_name'])) {
+    if (!isset($params['herika_name']) || !isset($params["target"]) || !isset($params['player_name'])) {
         $defaultName = isset($GLOBALS["PLAYER_NAME"]) ? $GLOBALS["PLAYER_NAME"] : "Player";
         $params = array_merge([
             'herika_name' => isset($GLOBALS["HERIKA_NAME"]) ? $GLOBALS["HERIKA_NAME"] : "Character",
-            'target' => isset($GLOBALS["target"]) ? $GLOBALS["target"] : $defaultName,
+            "target" => isset($GLOBALS["target"]) ? $GLOBALS["target"] : $defaultName,
             'player_name' => $defaultName
         ], $params);
     }
@@ -991,11 +991,11 @@ function expandDecorator($tag, $params = []) {
     $registry = ContextBuilderRegistry::getInstance();
     
     // Set default values for missing parameters
-    if (!isset($params['herika_name']) || !isset($params['target']) || !isset($params['player_name'])) {
+    if (!isset($params['herika_name']) || !isset($params["target"]) || !isset($params['player_name'])) {
         $defaultName = isset($GLOBALS["PLAYER_NAME"]) ? $GLOBALS["PLAYER_NAME"] : "Player";
         $params = array_merge([
             'herika_name' => isset($GLOBALS["HERIKA_NAME"]) ? $GLOBALS["HERIKA_NAME"] : "Character",
-            'target' => isset($GLOBALS["target"]) ? $GLOBALS["target"] : $defaultName,
+            "target" => isset($GLOBALS["target"]) ? $GLOBALS["target"] : $defaultName,
             'player_name' => $defaultName
         ], $params);
     }

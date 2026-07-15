@@ -91,7 +91,7 @@ function InitializeRelationshipContextBuilders() {
  */
 function BuildRelationshipContext($params) {
     // Determine which character's relationship we're describing
-    $target = $params['target'];
+    $target = $params["target"];
     $herika_name = $params['herika_name'];
     $player_name = $params['player_name'];
     $force_show_relationship = isset($params['force_relationship']) ? $params['force_relationship'] : false;
@@ -194,7 +194,7 @@ function BuildRelativePowerContext($params) {
     // Get character information
     $character = $params['herika_name'];
     $player_name = $params['player_name'];
-    $target = $params['target'];
+    $target = $params["target"];
     
     if ($character == "The Narrator") {
         $target = $player_name;

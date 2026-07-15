@@ -1,4 +1,8 @@
     $lastDialogFull = array();
+
+    $ext_sqlfilter1 = $GLOBALS["EXT_CONTEXT_SQL_FILTER1"] ?? "";
+    $ext_sqlfilter2 = $GLOBALS["EXT_CONTEXT_SQL_FILTER2"] ?? "";
+
     $b_actor = (strlen($actor) > 0);
     if ($b_actor)
         $actorEscaped=$db->escape($actor);

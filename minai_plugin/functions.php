@@ -4,7 +4,9 @@
 // functions rework
 //----------------------------------------------------------------
 
-$s_lang =strtolower($GLOBALS["CORE_LANG"] ?? 'en');
+$s_lang = strtolower($GLOBALS["CORE_LANG"] ?? 'en');
+if (strlen($s_lang) < 1)
+    $s_lang = 'en';
 
 if ($s_lang == 'en') {
 
@@ -15,18 +17,55 @@ if ($s_lang == 'en') {
         
         if ($func_name == 'GiveItemTo') { //"{$GLOBALS["HERIKA_NAME"]} gives a specific item from inventory to another actor. REQUIRED: Must include 'item' field with exact item name from <inventory> tag, and 'target' field with recipient name";
             $GLOBALS["FUNCTIONS"][$n]["description"] = "{$GLOBALS["HERIKA_NAME"]} gives a specific item from inventory to another actor. REQUIRED: Must include 'item' field with exact item name from inventory, and 'target' field with recipient name. Target actor must be selected from <nearby_characters> list.";
-        } elseif ($func_name == 'TradeItems') { //{$GLOBALS["HERIKA_NAME"]} gives item to a single actor (target property is the actor). Amount and item will be inferred from dialogue, so no need to specify.
-            //$GLOBALS["FUNCTIONS"][$n]["description"]="{$GLOBALS["HERIKA_NAME"]} trade items with another actor. Amount and item will be infered from dialogue, so no need to specify";
-            $GLOBALS["FUNCTIONS"][$n]["description"]="{$GLOBALS["HERIKA_NAME"]} trade items or exchange items with another actor or {$GLOBALS["PLAYER_NAME"]}. Amount and item will be inferred from dialogue, so no need to specify";
         } elseif ($func_name == 'GiveGoldTo') { //gives gold/coins/septims to another actor. Specify the amount to give";
-            $GLOBALS["FUNCTIONS"][$n]["description"] = "{$GLOBALS["HERIKA_NAME"]} gives coins/gold/septims to a single actor or {$GLOBALS["PLAYER_NAME"]}. Specify the amount to give.";
+            $GLOBALS["FUNCTIONS"][$n]["description"] = "{$GLOBALS["HERIKA_NAME"]} gives coins, gold or septims to a single character or to {$GLOBALS["PLAYER_NAME"]}. Specify the amount to give.";
+        } elseif ($func_name == 'TradeItems') { //{$GLOBALS["HERIKA_NAME"]} gives item to a single actor (target property is the actor). Amount and item will be inferred from dialogue, so no need to specify.
+            $GLOBALS["FUNCTIONS"][$n]["description"]="{$GLOBALS["HERIKA_NAME"]} trade or exchange items with another character or {$GLOBALS["PLAYER_NAME"]}. Amount and item will be inferred from dialogue, so no need to specify.";
+            //error_log("$func_name - ".$GLOBALS["FUNCTIONS"][$n]["description"]); // debug
+        } elseif ($func_name == 'Inspect') { 
+            $GLOBALS["FUNCTIONS"][$n]["description"]="{$GLOBALS["HERIKA_NAME"]} will use this action ONLY to inspect a character nearby from <nearby_characters> list. Wait for result to talk about findings.";
+        } elseif ($func_name == 'LookAt') { 
+            $GLOBALS["FUNCTIONS"][$n]["description"]="{$GLOBALS["HERIKA_NAME"]} will use this action ONLY to inspect a character nearby from <nearby_characters> list. Wait for result to talk about findings.";
+        } elseif ($func_name == 'InspectSurroundings') { //""Looks for actors around. Wait for result to give a dialogue message";";
+            $GLOBALS["FUNCTIONS"][$n]["description"]="{$GLOBALS["HERIKA_NAME"]} will use this action ONLY to search for people or creatures around listed in <nearby_characters> tag, NOT for locations or items. Wait for result to talk about findings."; // {$GLOBALS["PLAYER_NAME"]}
+            //error_log("$func_name - ".$GLOBALS["FUNCTIONS"][$n]["description"]); // debug
+        } elseif ($func_name == 'CheckInventory') { 
+            $GLOBALS["FUNCTIONS"][$n]["description"]="Search for specific item or list relevant items in {$GLOBALS["HERIKA_NAME"]}'s inventory.";
+
+/*
+        } elseif ($func_name == '') { 
+            $GLOBALS["FUNCTIONS"][$n]["description"]="{$GLOBALS["HERIKA_NAME"]}  {$GLOBALS["PLAYER_NAME"]}";
+        } elseif ($func_name == '') { 
+            $GLOBALS["FUNCTIONS"][$n]["description"]="{$GLOBALS["HERIKA_NAME"]}  {$GLOBALS["PLAYER_NAME"]}";
+        } elseif ($func_name == '') { 
+            $GLOBALS["FUNCTIONS"][$n]["description"]="{$GLOBALS["HERIKA_NAME"]}  {$GLOBALS["PLAYER_NAME"]}";
+        } elseif ($func_name == '') { 
+            $GLOBALS["FUNCTIONS"][$n]["description"]="{$GLOBALS["HERIKA_NAME"]}  {$GLOBALS["PLAYER_NAME"]}";
+        } elseif ($func_name == '') { 
+            $GLOBALS["FUNCTIONS"][$n]["description"]="{$GLOBALS["HERIKA_NAME"]}  {$GLOBALS["PLAYER_NAME"]}";
+        } elseif ($func_name == '') { 
+            $GLOBALS["FUNCTIONS"][$n]["description"]="{$GLOBALS["HERIKA_NAME"]}  {$GLOBALS["PLAYER_NAME"]}";
+        } elseif ($func_name == '') { 
+            $GLOBALS["FUNCTIONS"][$n]["description"]="{$GLOBALS["HERIKA_NAME"]}  {$GLOBALS["PLAYER_NAME"]}";
+        } elseif ($func_name == '') { 
+            $GLOBALS["FUNCTIONS"][$n]["description"]="{$GLOBALS["HERIKA_NAME"]}  {$GLOBALS["PLAYER_NAME"]}";
+*/
+
         } elseif ($func_name == 'Relax') { // Stop whatever you are doing and relax at the current location. Used to Rest, Enjoy Moment, Chill, Eat, Drink, Loosen Up.
-            $GLOBALS["FUNCTIONS"][$n]["description"] = "{$GLOBALS["HERIKA_NAME"]} stops whatever is doing and relax or rest at the current location. Used to Rest, Enjoy Moment, Chill, Feast, Loosen Up.";
+            $GLOBALS["FUNCTIONS"][$n]["description"] = "{$GLOBALS["HERIKA_NAME"]} stops whatever is doing to relax, rest, chill or feast at the current location.";
         }
     }
 }
 
 /*
+$F_TRANSLATIONS_LOCAL["Inspect"] = "Inspects ONLY an ACTOR/NPC. Wait for result to give a dialogue message.";
+$F_TRANSLATIONS_LOCAL["LookAt"] = "Inspects ONLY an ACTOR/NPC. Wait for result to give a dialogue message.";
+
+$F_TRANSLATIONS_LOCAL["InspectSurroundings"] = "Looks for actors around. Wait for result to give a dialogue message";
+
+$F_TRANSLATIONS_LOCAL["CheckInventory"] = "Search in {$GLOBALS["HERIKA_NAME"]}'s inventory, backpack or pocket. List their inventory contents";
+
+
 $GLOBALS["FUNCTIONS"] = [
     [
         "name" => $F_NAMES_LOCAL["Inspect"],
@@ -133,6 +172,10 @@ load_function_module("functions/action_builder.php");
 
 // Preload common actor data to reduce database queries
 minai_start_timer('preload_actor_data', 'functions_php');
+if (!isset($GLOBALS["HERIKA_NAME"])) $GLOBALS["HERIKA_NAME"] = '';
+if (!isset($GLOBALS["PLAYER_NAME"])) $GLOBALS["PLAYER_NAME"] = '';
+if (!isset($GLOBALS["target"])) $GLOBALS["target"] = $GLOBALS["PLAYER_NAME"];
+
 PreloadCommonActorData();
 minai_stop_timer('preload_actor_data');
 

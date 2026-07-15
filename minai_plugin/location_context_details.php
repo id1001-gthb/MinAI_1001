@@ -46,7 +46,7 @@ function GetLocationDetails($locationName) {
 		"iceheart mill" 		=> "a private place owned by Iceheart twin sisters, safe for rest, unwinding and intimacy",
 		"kynesby" 				=> "a private place in Kynesgrove owned by {$s_owner}, safe for rest, unwinding and intimacy",
 		"lakeview manor"		=> "a private home in Falkreath with a beautiful lake view, owned by {$s_owner}, safe for rest, unwinding and intimacy",
-		"mias palace" 			=> "a private residence captured from former slave owner Mia Lorenz, now inhabited by sex slaves. A place of debauchery where endless sex takes place. A safe place for rest, unwinding and intimacy",
+		"mias palace" 			=> "a private residence captured by {$s_owner} from former slave owner Mia Lorenz, now inhabited by former sex slaves. Known also as Sanguine's Pleasure Palace, is place of debauchery where endless sex takes place. A safe place for rest, unwinding and intimacy",
 		"myrwatch" 				=> "a wizard tower in Hjaalmarch near Morthal transformed in a private cozy home, owned by {$s_owner}, safe for rest, unwinding and intimacy",
 		"nchuanthumz" 			=> "a large dwemer style private home in The Rift owned by {$s_owner}, safe for rest, unwinding and intimacy",
 		"new moon cottage"		=> "a private home in Morthal owned by {$s_owner}, safe for rest, unwinding and intimacy",

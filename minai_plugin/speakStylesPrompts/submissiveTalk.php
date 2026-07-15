@@ -3,8 +3,8 @@
 function setSubmissiveTalkPrompts($currentName)
 {
     $gender = GetGender($currentName);
-    $in0 = "(";
-    $in1 = ")";
+    $in0 = "<instruction>(";
+    $in1 = ")</instruction>";
 
     $GLOBALS["PROMPTS"]["sextalk_climaxchastity"] = [
         "cue" => [
@@ -29,7 +29,7 @@ function setSubmissiveTalkPrompts($currentName)
 			"{$in0}$currentName squirts and gasps trying to shows gratitude in broken sentences.{$in1} {$GLOBALS["TEMPLATE_DIALOG"]}",
             "{$in0}$currentName gratefully tell how she squirts.{$in1} {$GLOBALS["TEMPLATE_DIALOG"]}",
             "{$in0}$currentName tell how she loses control while squirting using submissive language.{$in1} {$GLOBALS["TEMPLATE_DIALOG"]}",
-            "{$in0}$currentName says something about how she almost passes out while being overcome by a devastating orgasm using obedient language.{$in1} {$GLOBALS["TEMPLATE_DIALOG"]}",
+            "{$in0}$currentName comment about how she almost passes out while being overcome by a devastating orgasm using obedient language.{$in1} {$GLOBALS["TEMPLATE_DIALOG"]}",
 			"{$in0}$currentName moans loudly during climax, unable to articulate words.{$in1} {$GLOBALS["TEMPLATE_DIALOG"]}",
 			"{$in0}$currentName moan and scream between broken words while having orgasm.{$in1} {$GLOBALS["TEMPLATE_DIALOG"]}",
  			"{$in0}$currentName beg to be filled with cum, happy to submit to partner's will.{$in1} {$GLOBALS["TEMPLATE_DIALOG"]}",
@@ -57,7 +57,7 @@ function setSubmissiveTalkPrompts($currentName)
             "{$in0}$currentName praise the partner's skill.{$in1} {$GLOBALS["TEMPLATE_DIALOG"]}",
             "{$in0}$currentName praise a relevant physical aspect of the partner.{$in1} {$GLOBALS["TEMPLATE_DIALOG"]}",
             "{$in0}$currentName tells how exciting current position is, using submissive obedient language.{$in1} {$GLOBALS["TEMPLATE_DIALOG"]}",
-            "{$in0}$currentName says what physical sensations the current position induces, using submissive language.{$in1} {$GLOBALS["TEMPLATE_DIALOG"]}",
+            "{$in0}$currentName comment what physical sensations the current position induces, using submissive language.{$in1} {$GLOBALS["TEMPLATE_DIALOG"]}",
             "{$in0}$currentName comment the physical arrangement, explaining how it will enhance the sensory experience using submissive language.{$in1} {$GLOBALS["TEMPLATE_DIALOG"]}",
             "{$in0}$currentName describe the sensory details to enhance visceral and psychological immersion using submissive obedient explicit language.{$in1} {$GLOBALS["TEMPLATE_DIALOG"]}",
 

@@ -1,11 +1,12 @@
 <?php
 // Path to configuration and database library
 $path = ".." . DIRECTORY_SEPARATOR . ".." . DIRECTORY_SEPARATOR . ".." . DIRECTORY_SEPARATOR;
-require_once($path . "conf" . DIRECTORY_SEPARATOR . "conf.php");
-require_once($path . "lib" . DIRECTORY_SEPARATOR . "{$GLOBALS['DBDRIVER']}.class.php");
+//require_once($path . "conf" . DIRECTORY_SEPARATOR . "conf_.php");
+//require_once($path . "lib" . DIRECTORY_SEPARATOR . "{$GLOBALS['D BDRIVER']}.class.php");
+require_once("/var/www/html/HerikaServer/lib/postgresql.class.php"); 
 require_once("../logger.php");
 
-$sceneGenerationPrompt = "Given data is description of scenes. It can be regular scenes where actors just standing/sitting. It also can be sex scenes. Use informal adult language. Describe scene in 1-2 sentences, including:
+$sceneGenerationPrompt = "Given data represent description of scenes. It can be regular scenes where actors just standing/sitting. It also can be sex scenes. Use informal adult language. Describe scene in 1-2 sentences, including:
 1. The position and configuration of each participant (e.g. kneeling, lying back, all fours).
 2. The participants involved in each sex act if applicable(e.g. who is performing, who is receiving).
 3. Use {actor0} for first actor, {actor1} for second actor, {actor3} for third, etc...

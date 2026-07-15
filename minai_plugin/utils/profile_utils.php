@@ -149,7 +149,7 @@ Function SetLLMFallbackProfile() {
     // $_GET["profile"] = md5("LLMFallback");
 }
 
-Function GetActorConfigPath($actorName) {
+Function GetActorConfigPath($actorName) { // deprecated but no issue 
     // If use symlink, php code is actually in repo folder but included in wsl php server
     // with just dirname((__FILE__)) it was getting directory of repo not php server 
     $path = "/var/www/html/HerikaServer/";

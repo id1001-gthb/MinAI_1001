@@ -28,8 +28,8 @@ function directRegisterAction($actionName, $displayName, $description, $enableCo
     static $nearby = null;
     
     if ($speakerGender === null) {
-        $speakerGender = $GLOBALS["herika_gender"];
-        $targetGender = $GLOBALS["target_gender"];
+        $speakerGender = $GLOBALS["herika_gender"] ?? GetGender($GLOBALS["HERIKA_NAME"]);
+        $targetGender = $GLOBALS["target_gender"] ?? GetGender($GLOBALS["target"]);
         $genderKey = "$speakerGender-$targetGender";
         $nearby = isset($GLOBALS["nearby"]) ? $GLOBALS["nearby"] : [];
     }

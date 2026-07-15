@@ -93,7 +93,7 @@ class Utilities {
     }   
 
     public function beingsInRange() {
-        $beingsInRange = DataBeingsInRange();
+        $beingsInRange = DataBeingsInRange2();
         $beingsInRange = str_replace("(", "", $beingsInRange);
 
         $realBeings = [];

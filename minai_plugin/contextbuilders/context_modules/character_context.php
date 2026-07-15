@@ -29,7 +29,7 @@ function ValidateContextParams($params, $required = ['herika_name']) {
                 case 'player_name':
                     $validated[$key] = isset($GLOBALS["PLAYER_NAME"]) ? $GLOBALS["PLAYER_NAME"] : "";
                     break;
-                case 'target':
+                case "target":
                     $validated[$key] = isset($GLOBALS["HERIKA_TARGET"]) ? 
                                       $GLOBALS["HERIKA_TARGET"] : 
                                       (isset($validated['player_name']) ? $validated['player_name'] : "");
@@ -347,7 +347,7 @@ function BuildPhysicalDescriptionContext($params) {
         $ret .= ucfirst($pronouns['subject']) . " has {$breastsDesc} (chest) and {$buttDesc} (posterior). ";
     }
     if ($is_nsfw) {
-        if ($isnaked || $isexposed) {
+        if ($isnaked || $isexposed || (IsInScene($character))) {
             if ($gender == 'male') {
                 $ret .= GetPenisSize($character);
 
@@ -355,7 +355,7 @@ function BuildPhysicalDescriptionContext($params) {
                 
                 $arousalThreshold = intval(GetActorValue($GLOBALS['PLAYER_NAME'], "arousalForSex")); // arousalForSex arousalForHarass
                 $arousal = intval(GetActorValue($character, "arousal"));
-                if (($arousal > 80) && ($arousal >= $arousalThreshold)) {
+                if ($arousal >= intval($arousalThreshold * 0.8))  {
                     $ret.= "<penis_erection_status>{$character} has a visible erection.</penis_erection_status> ";
                 }
             }
@@ -731,7 +731,7 @@ function BuildSurvivalContext($params) {
 function BuildBountyContext($params) {
     $herika_name = $params['herika_name'];
     $player_name = $params['player_name'];
-    $target = $params['target'];
+    $target = $params["target"];
 
     // Check conditions to show bounty:
     // 1. If we are talking to the narrator OR
@@ -877,13 +877,13 @@ function GetLevelDescription($level) {
  * @return string Formatted level context
  */
 function BuildLevelContext($params) {
-    $params = ValidateContextParams($params, ['herika_name', 'player_name', 'target']);
+    $params = ValidateContextParams($params, ["herika_name", "player_name", "target"]);
     $character = $params['herika_name'];
     $player_name = $params['player_name'];
     
     // If this is the narrator, show info for the target or player
     if ($character == "The Narrator") {
-        $character = $params['target'] ? $params['target'] : $player_name;
+        $character = $params["target"] ? $params["target"] : $player_name;
     }
     
     $utilities = new Utilities();
@@ -906,13 +906,13 @@ function BuildLevelContext($params) {
  * @return string Formatted family status context
  */
 function BuildFamilyStatusContext($params) {
-    $params = ValidateContextParams($params, ['herika_name', 'player_name', 'target']);
+    $params = ValidateContextParams($params, ["herika_name", "player_name", "target"]);
     $character = $params['herika_name'];
     $player_name = $params['player_name'];
     
     // If this is the narrator, show info for the target or player
     if ($character == "The Narrator") {
-        $character = $params['target'] ? $params['target'] : $player_name;
+        $character = $params["target"] ? $params["target"] : $player_name;
     }
     
     // These are all NPC only
@@ -949,10 +949,10 @@ function BuildFamilyStatusContext($params) {
  * @return string Formatted career context
  */
 function BuildCareerContext($params) {
-    $params = ValidateContextParams($params, ['herika_name', 'player_name', 'target']);
+    $params = ValidateContextParams($params, ["herika_name", "player_name", "target"]);
     $character = $params['herika_name'];
     $player_name = $params['player_name'];
-    $target = $params['target'];
+    $target = $params["target"];
     
     // Not relevant for the narrator or the player
     if ($character == "The Narrator" || $character == $player_name) {
@@ -1070,7 +1070,7 @@ function BuildCharacterStateContext($params) {
  * @return string Formatted third party context for a specific character
  */
 function BuildThirdPartyContext($params) {
-    $params = ValidateContextParams($params, ['herika_name', 'player_name', 'target']);
+    $params = ValidateContextParams($params, ["herika_name", "player_name", "target"]);
     $character = $params['herika_name'];
     $player_name = $params['player_name'];
     
@@ -1194,19 +1194,19 @@ function BuildVitalsContext($params) {
     
     // Health status - 10 stages + 0 state
     if ($healthPercent <= 0) {
-        $context .= "{$character} is knocked down and incapacitated. ";
+        $context .= "{$character} is knocked down and incapacitated, <emotional_state>fearful</emotional_state> being on the verge of death. ";
     } elseif ($healthPercent <= 10) {
-        $context .= "{$character} is on the brink of death, barely clinging to life with grievous wounds. ";
+        $context .= "{$character} is on the brink of death, <emotional_state>fearful</emotional_state> and barely clinging to life with grievous wounds. ";
     } elseif ($healthPercent <= 20) {
-        $context .= "{$character} is critically wounded, suffering from severe injuries that threaten their life. ";
+        $context .= "{$character} is critically wounded, suffering from severe injuries that threaten their life, feeling <emotional_state>fearful</emotional_state>. ";
     } elseif ($healthPercent <= 30) {
-        $context .= "{$character} is severely wounded, bearing multiple serious injuries that require immediate attention. ";
+        $context .= "{$character} is severely wounded, bearing multiple serious injuries that require immediate attention, in <emotional_state>panic</emotional_state>. ";
     } elseif ($healthPercent <= 40) {
-        $context .= "{$character} is seriously wounded, showing signs of significant injury and pain. ";
+        $context .= "{$character} is seriously wounded, showing signs of significant injury and pain, <emotional_state>panic</emotional_state> starting to cloud their mind. ";
     } elseif ($healthPercent <= 50) {
-        $context .= "{$character} is moderately wounded, showing clear signs of injury but still able to function. ";
+        $context .= "{$character} is moderately wounded, showing clear signs of injury but still able to function, <emotional_state>anxious</emotional_state>. ";
     } elseif ($healthPercent <= 60) {
-        $context .= "{$character} is wounded, bearing several injuries that are causing discomfort. ";
+        $context .= "{$character} is wounded, bearing several injuries that are causing discomfort, <emotional_state>anxious</emotional_state>. ";
     } elseif ($healthPercent <= 70) {
         $context .= "{$character} is lightly wounded, showing some signs of injury but still in good fighting condition. ";
     } elseif ($healthPercent <= 85) {

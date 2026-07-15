@@ -1,11 +1,11 @@
 <?php
-// not to be included explicitly, must be included only via requireFilesRecursively()
-//error_log("-- preprocessing -- ");
+// not to be included explicitly, must be included only via requireFilesRecursively() L 185 after globals php
+//error_log("-- preprocessing -- " . __FILE__); // debug
+$GLOBALS["checkpoint_preprocessing_php"] = true;
 
 // Start metrics for this entry point
-require_once("utils/metrics_util.php");
+require_once(__DIR__."/utils/metrics_util.php");
 
-SaveOriginalHerikaName();
 
 if (isset($GLOBALS["TTS_FFMPEG_FILTERS"]["tempo"])) {
 	$s_tempo = $GLOBALS["TTS_FFMPEG_FILTERS"]["tempo"];  
@@ -20,34 +20,25 @@ if (isset($GLOBALS["TTS_FFMPEG_FILTERS"]["tempo"])) {
 	}
 }
 
-/*
-// min old version
-$fast_commands = ["addnpc","_quest","setconf","request","_speech","infoloc","infonpc","infonpc_close",
-    "infoaction","status_msg","delete_event","itemfound","_questdata","_uquest","location","_questreset"];
-*/
+//--------------------------------------
 
-// chim new version
-
-//$fast_commands = ["addnpc","updateprofile","diary","_quest","setconf","request","_speech","infoloc","infonpc","infonpc_close",
-//    "infoaction","status_msg","delete_event","itemfound","_questdata","_uquest","location","_questreset","chat","bleedout","waitstart","waitstop",
-//    "util_location_name","spellcast","npcspellcast","updateprofiles_batch_async","core_profile_assign","switchrace","combatbark",
-//    "util_location_npc","enable_bg","region","named_cell","snqe"];
-
-$fast_commands = ["addnpc","updateprofile","diary","_quest","setconf","request","_speech","infoloc","infonpc","infonpc_close",
+$arr_fast_commands = $GLOBALS["fast_commands"] ?? ["addnpc","addbgnpc","updateprofile","updateprofile_narrator","diary","diary_narrator",
+    "diary_player","_quest","setconf","request","_speech","infoloc","infonpc","infonpc_close",
     "infoaction","status_msg","delete_event","itemfound","_questdata","_uquest","location","_questreset","chat","bleedout","waitstart","waitstop",
     "util_location_name","util_faction_name","spellcast","npcspellcast","updateprofiles_batch_async","core_profile_assign","switchrace","combatbark",
-    "util_location_npc","enable_bg","region","named_cell","snqe","named_cell_static"];
+    "util_location_npc","enable_bg","region","named_cell","snqe","named_cell_static","player_menu_tts_prefetch","player_menu_tts_play",
+    "physics_raw"]; // raw VR contact/gaze telemetry from client plugins: log-only unless an extension opts in by renaming it in preprocessing
 
+
+
+//"combatbark",
 
 if (isset($GLOBALS["external_fast_commands"])) {
-    $fast_commands = array_merge($fast_commands, $GLOBALS["external_fast_commands"]);
+    $arr_fast_commands = array_merge($arr_fast_commands, $GLOBALS["external_fast_commands"]);
 }
 
-// $GLOBALS["all_fast_commands"] = $fast_commands; // check if this is set
-
-
 // Check for exact matches against fast commands
-if (isset($GLOBALS["gameRequest"]) && in_array($GLOBALS["gameRequest"][0], $fast_commands)) {
+if (isset($GLOBALS["gameRequest"]) && in_array($GLOBALS["gameRequest"][0], $arr_fast_commands)) {
     $GLOBALS["minai_skip_processing"] = true;
     //error_log("Skip fast-request: " . $GLOBALS["gameRequest"][0]); // debug
 } else {
@@ -65,21 +56,21 @@ if (isset($GLOBALS["minai_skip_processing"]) && $GLOBALS["minai_skip_processing"
 minai_start_timer('preprocessing_php', 'MinAI');
 
 // Initialize common variables
-require_once("utils/init_common_variables.php");
+require_once(__DIR__."/utils/init_common_variables.php");
+//error_log("[init_common_variables] target=".$GLOBALS["target"]." target_gender=".$GLOBALS["target_gender"]." HERIKA_NAME=".$GLOBALS["HERIKA_NAME"]." herika_gender=".$GLOBALS["herika_gender"]." ".__FILE__); //debug
 
 if ((!isset($GLOBALS["action_prompts"]["normal_scene"])) ||
     (!isset($GLOBALS["action_prompts"]["explicit_scene"])) ||
     (empty($GLOBALS["action_prompts"]))) {
-
-    //include("/var/www/html/HerikaServer/ext/minai_plugin/config .php");
     $GLOBALS["action_prompts"] = $GLOBALS["action_prompts_copy"]; 
     error_log("WARNING in preprocessing: CHIM made an attempt to disable MinAI action_prompts! ");
 }
 
+require_once(__DIR__."/util.php");
+require_once(__DIR__."/contextbuilders.php");
+require_once(__DIR__."/roleplaybuilder.php");
 
-require_once("util.php");
-require_once("contextbuilders.php");
-require_once("roleplaybuilder.php");
+save_original_herika_name();
 
 // Check for banned phrases in gameRequest[3]
 /*
@@ -94,9 +85,6 @@ if (isset($GLOBALS["gameRequest"][3])) {
     }
 }
 */
-
-// TODO: Add an actual install routine to the HerikaServer proper to not do this every request.
-// InitiateDBTables();
 
 // This is a hack to get around CHIM eating "diary" requests for the player in the DLL
 if (isset($GLOBALS["gameRequest"][0]) && $GLOBALS["gameRequest"][0] == "minai_diary") {

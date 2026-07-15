@@ -15,7 +15,7 @@ function shouldEnableActiveSexAction() {
 
 // Function to check if at least one female actor is present (target or Herika)
 function hasAtLeastOneFemale() {
-    return $GLOBALS["target_gender"] === "female" || $GLOBALS["herika_gender"] === "female";
+    return ($GLOBALS["target_gender"] === "female") || (($GLOBALS["herika_gender"] ?? "") === "female");
 }
 
 // Function to check if at least one male actor is present (target or Herika)

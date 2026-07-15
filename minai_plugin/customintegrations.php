@@ -2,18 +2,18 @@
 // We need access to gameRequest here, but it's not global.
 // Impl copied from main .php
 
-require_once("util.php");
-require_once(__DIR__.DIRECTORY_SEPARATOR."updateThreadsDB.php");
-require_once(__DIR__.DIRECTORY_SEPARATOR."dungeonmaster.php");
-require_once(__DIR__.DIRECTORY_SEPARATOR."items.php");
-require_once(__DIR__.DIRECTORY_SEPARATOR."utils/narrator_utils.php");
+require_once(__DIR__."/util.php");
+require_once(__DIR__."/updateThreadsDB.php");
+require_once(__DIR__."/dungeonmaster.php");
+require_once(__DIR__."/items.php");
+require_once(__DIR__."/utils/narrator_utils.php");
 
 function check_executable_files($s_folder, $extensions_list='.php,.sh', $max_files=100000 ) {
 
     $arr_res = [];
     $ix = 0;
 
-    //s_folder = "/var/www/html/HerikaServer";
+    //s_folder = "/var/www/html/HerikaServer"; MIDDLE_TERM_MEMORY_ENABLED
     if(is_dir($s_folder)) {
         $handle = opendir($s_folder);
         while(($entry = readdir($handle)) !== false) {
@@ -98,14 +98,45 @@ function ProcessIntegrations() {
         if ($s_type == "minai_init") {
             // This is sent once by the SKSE plugin when the game is loaded. Do our initialization here.
             minai_log("info", "Initializing");
+            $db = $GLOBALS['db'];
+            try {
+                $db->execQuery(" SET idle_in_transaction_session_timeout = '5min'; "); //SET idle_in_transaction_session_timeout = '5min';
+                $db->execQuery(" ALTER ROLE dwemer SET idle_in_transaction_session_timeout = '5min'; "); //ALTER ROLE user_name SET idle_in_transaction_session_timeout = '10min';
+                $db->execQuery(" SET idle_session_timeout = 900000; "); //SET idle_session_timeout = 600000; // 10 min
+                $db->execQuery(" ALTER ROLE dwemer SET idle_session_timeout = 900000; "); 
+                
+                //$db->execQuery(" SET TIME ZONE 'Europe/'; ");
+                //$db->execQuery(" SET shared_buffers = '4GB'; "); //shared_buffers = 4GB  
+                //$db->execQuery(" SET temp_buffers = '256MB'; "); //temp_buffers = 256MB
+                /*
+                $db->execQuery(" SET max_connections = 256; "); //max_connections = 160
+                $db->execQuery(" SET work_mem = '42MB'; "); //work_mem = 48MB				# min 64kB
+                $db->execQuery(" SET maintenance_work_mem = '256MB'; "); // maintenance_work_mem = 256MB		# min 1MB
+                $db->execQuery(" SET logical_decoding_work_mem = '64MB'; "); //logical_decoding_work_mem = 64MB
+                $db->execQuery(" SET max_stack_depth = '4MB'; "); //max_stack_depth = 4MB
+                //$db->execQuery(" SET effective_io_concurrency = 32; "); // effective_io_concurrency = 32
+                //$db->execQuery(" SET max_worker_processes = 10; "); //max_worker_processes = 10		# (change requires restart)
+                $db->execQuery(" SET max_parallel_workers_per_gather = 4; "); //max_parallel_workers_per_gather = 4	# taken from max_parallel_workers
+                $db->execQuery(" SET max_parallel_maintenance_workers = 4; "); //max_parallel_maintenance_workers = 4	# taken from max_parallel_workers
+                $db->execQuery(" SET max_parallel_workers = 12; "); //max_parallel_workers = 12		
+                $db->execQuery(" SET wal_buffers = '16MB'; ");  // wal_buffers = 16MB			# min 32kB, -1 sets based on shared_buffers
+                $db->execQuery(" SET max_wal_size = '4GB'; "); // max_wal_size = 4GB
+                $db->execQuery(" SET min_wal_size = '1024MB'; "); // min_wal_size = 1024MB
+                //$db->execQuery(" SET huge_pages = 'try'; "); //huge_pages = try
+                //$db->execQuery(" SET  "); 
+                //$db->execQuery(" ");
+                */
+            } catch (Exception $e) {
+                error_log("[init] error " . $e->getMessage());
+            }
 
             $b_do_patch = false;
             $b_do_clean = false;
 
             $s_min_ver = getMinaiVersionFile();
             $s_chim_version = getChimVersionFile(); // get CHIM version from .version_number.txt
-            error_log("[init] MinAI version {$s_min_ver} started.");
-            error_log("[init] CHIM version {$s_chim_version} ");
+            $s_chim_dll_version = getChimDllVersion();
+            error_log("[init] CHIM version dll:{$s_chim_dll_version} server:{$s_chim_version} MinAI:{$s_min_ver} ");
 
             $s_prev_version = getChimVersion(); //getConfOptionValue
             if ($s_chim_version != $s_prev_version) {
@@ -158,6 +189,8 @@ function ProcessIntegrations() {
             setConfOption("_minai_Sabretooth//tngsize","4");
             setConfOption("_minai_Thonar Silver-Blood//tngsize","1");
             setConfOption("_minai_Farkas//tngsize","4");
+            setConfOption("_minai_Ranyu//tngsize","4");
+            setConfOption("_minai_Unbound Dremora//tngsize","4");
             //setConfOption("//tngsize","4");
             //setConfOption("//tngsize","4");
             
@@ -182,16 +215,16 @@ function ProcessIntegrations() {
                 try {
                     $db = $GLOBALS['db'];
                     
-                    $query = " UPDATE public.core_llm_connector SET metadata['remove_action_prompt'] = 'false'; ";
-                    $db->execQuery($query);        
+                    //$query = " UPDATE public.core_llm_connector SET metadata['remove_action_prompt'] = 'false'; ";
+                    //$db->execQuery($query);        
                     
-                    $query = " UPDATE public.core_npc_master SET extended_data['ENFORCE_ACTIONS_PROMPT'] = 'true'; ";
-                    $db->execQuery($query);        
+                    //$query = " UPDATE public.core_npc_master SET extended_data['ENFORCE_ACTIONS_PROMPT'] = 'true'; ";
+                    //$db->execQuery($query);        
 
-                    $query = " UPDATE public.core_profiles SET metadata['ENFORCE_ACTIONS_PROMPT'] = 'true'; ";
-                    $db->execQuery($query);        
+                    //$query = " UPDATE public.core_profiles SET metadata['ENFORCE_ACTIONS_PROMPT'] = 'true'; ";
+                    //$db->execQuery($query);        
                     
-                    error_log("[init] action prompts patch done. ");
+                    //error_log("[init] action prompts patch done. ");
                     
                 } catch (Exception $e) {
                     $b_ok = false;
@@ -294,7 +327,7 @@ function ProcessIntegrations() {
             $MUST_DIE=true;
         } else if ($s_type == "minai_narrator_talk") { // Handle narrator talk events
             SetEnabled($GLOBALS["PLAYER_NAME"], "isTalkingToNarrator", false);
-            SaveOriginalHerikaName(); //
+            save_original_herika_name(); //
             $GLOBALS["HERIKA_NAME"] = "The Narrator";
             SetNarratorProfile();
             
@@ -431,7 +464,7 @@ function ProcessIntegrations() {
         if (in_array($s_type,["inputtext","inputtext_s","ginputtext","ginputtext_s","rechat","bored","radiant","minai_force_rechat",
                 // add new events from CHIM:
                 //"narrator_inputtext","instruction","welcome","cheatmode",
-                "narration"])) { 
+                "narration","continue"])) { 
             if (!in_array($s_type, ["radiant", "rechat", "minai_force_rechat"]))
                 ClearRadiantActors();
             minai_log("info", "Setting lastInput [$s_type] time."); 

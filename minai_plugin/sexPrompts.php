@@ -1,18 +1,18 @@
 <?php
 
-require_once("util.php");
-require_once("speakStylesPrompts/dirtyTalk.php");
-require_once("speakStylesPrompts/sweetTalk.php");
-require_once("speakStylesPrompts/sensualWhispering.php");
-require_once("speakStylesPrompts/playfulBanter.php");
-require_once("speakStylesPrompts/sultrySeduction.php");
-require_once("speakStylesPrompts/breathlessGasps.php");
-require_once("speakStylesPrompts/eroticStorytelling.php");
-require_once("speakStylesPrompts/teasingTalk.php");
-require_once("speakStylesPrompts/dominantTalk.php");
-require_once("speakStylesPrompts/submissiveTalk.php");
-require_once("speakStylesPrompts/victimTalk.php");
-require_once("speakStylesPrompts/aggressorTalk.php");
+require_once(__DIR__."/util.php");
+require_once(__DIR__."/speakStylesPrompts/dirtyTalk.php");
+require_once(__DIR__."/speakStylesPrompts/sweetTalk.php");
+require_once(__DIR__."/speakStylesPrompts/sensualWhispering.php");
+require_once(__DIR__."/speakStylesPrompts/playfulBanter.php");
+require_once(__DIR__."/speakStylesPrompts/sultrySeduction.php");
+require_once(__DIR__."/speakStylesPrompts/breathlessGasps.php");
+require_once(__DIR__."/speakStylesPrompts/eroticStorytelling.php");
+require_once(__DIR__."/speakStylesPrompts/teasingTalk.php");
+require_once(__DIR__."/speakStylesPrompts/dominantTalk.php");
+require_once(__DIR__."/speakStylesPrompts/submissiveTalk.php");
+require_once(__DIR__."/speakStylesPrompts/victimTalk.php");
+require_once(__DIR__."/speakStylesPrompts/aggressorTalk.php");
 
 $HerikaName = $GLOBALS["HERIKA_NAME"];
 $currentName = strtolower($HerikaName);
@@ -21,7 +21,14 @@ if (($currentName === "the narrator") || ($currentName === "narrator"))  {
     return;
 }
 
-$scene = getScene($currentName);
+$scene = getScene($HerikaName);
+$bIsInScene = (isset($scene) && (!empty($scene)));
+
+/*Function IsInScene($name) {
+    $scene = getScene($name);
+    return (isset($scene) && (!empty($scene)));
+}*/
+
 // Add debug logging for scene data
 // minai_log("info", "Scene data: " . json_encode($scene));
 
@@ -37,11 +44,13 @@ $GLOBALS["SEX_SCENE_CONTEXT"] = [
     "fallback" => isset($scene["fallback"]) ? $scene["fallback"] : ""
 ];
 
-$jsonXPersonality = getXPersonality($currentName);
-addXPersonality($jsonXPersonality);
-setDirtyTalkPrompts($HerikaName); //default prompts when scene or speak style is not found 
+if($bIsInScene){
 
-if(isset($scene)){
+    $jsonXPersonality = getXPersonality($HerikaName);
+    addXPersonality($jsonXPersonality);
+
+    setDirtyTalkPrompts($HerikaName); //default prompts when speak style is not found 
+
     $targetToSpeak = getTargetDuringSex($scene) ?? "";
     $gender = GetGender($HerikaName);
        
@@ -121,6 +130,25 @@ if(isset($scene)){
             }
         }
     }
-//} else {
-//    minai_log("warn", "Setting sex speak style failed attempt: scene not found.");
+} else {
+    // speaker not in scene, replace prompt with something else
+    $s_type = $GLOBALS["gameRequest"][0] ?? ""; 
+    $s_prompt = $GLOBALS["gameRequest"][3] ?? "";
+    //error_log("[sexPrompts] npc={$HerikaName} type={$s_type} prompt={$s_prompt} - dbg"); //debug
+
+    $s_def_prompt = "<instruction>{$HerikaName} replies to interlocutor. Pay attention to what the interlocutor is saying and respond directly and to the point.</instruction> {$GLOBALS["TEMPLATE_DIALOG"]}";
+    $i_random = rand(1, 7); // to lower the probability of some cues
+    if ($i_random == 1) {
+        $s_def_prompt = "<instruction>{$HerikaName} replies to interlocutor and change focus to the sex scene unfolding nearby. </instruction> {$GLOBALS["TEMPLATE_DIALOG"]}";
+        //error_log("[sexPrompts] npc={$HerikaName} type={$s_type} prompt={$s_prompt} - dbg"); //debug
+    }    
+    
+    $GLOBALS["PROMPTS"]["sextalk_climaxchastity"] = ["cue" => [$s_def_prompt]];
+    $GLOBALS["PROMPTS"]["sextalk_climax"] = ["cue" => [$s_def_prompt]];
+    $GLOBALS["PROMPTS"]["sextalk_scenechange"] = ["cue" => [$s_def_prompt]];
+    $GLOBALS["PROMPTS"]["sextalk_speedincrease"] = ["cue" => [$s_def_prompt]];
+    $GLOBALS["PROMPTS"]["sextalk_speeddecrease"] = ["cue" => [$s_def_prompt]];
+    $GLOBALS["PROMPTS"]["sextalk_end"] = ["cue" => [$s_def_prompt]];
+    $GLOBALS["PROMPTS"]["sextalk_ambient"] = ["cue" => [$s_def_prompt]];
+    //$GLOBALS["PROMPTS"]["sextalk_"] = ["cue" => [$s_def_prompt]];
 }

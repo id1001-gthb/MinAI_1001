@@ -6,8 +6,8 @@ $pluginPath = "/var/www/html/HerikaServer/ext/minai_plugin";
 require_once("$pluginPath/db_utils.php");
 require_once("$pluginPath/logger.php");
 $path = "..".DIRECTORY_SEPARATOR."..".DIRECTORY_SEPARATOR."..".DIRECTORY_SEPARATOR;
-require_once($path . "conf".DIRECTORY_SEPARATOR."conf.php");
-require_once($path. "lib" .DIRECTORY_SEPARATOR."{$GLOBALS["DBDRIVER"]}.class.php");
+//require_once($path . "conf".DIRECTORY_SEPARATOR."conf_.php");
+require_once("/var/www/html/HerikaServer/lib/postgresql.class.php"); 
 $GLOBALS["db"] = new sql();
 $db = $GLOBALS["db"];
 

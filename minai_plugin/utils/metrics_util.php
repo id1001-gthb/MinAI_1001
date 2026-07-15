@@ -11,7 +11,7 @@ require_once(__DIR__ . "/../logger.php");
 
 class MinAIMetrics {
     private static $instance = null;
-    private $metricsEnabled = true;
+    private $metricsEnabled = false;
     private $metricsData = [];
     private $timers = [];
     private $metricsFile = "/var/www/html/HerikaServer/log/minai_metrics.jsonl";
@@ -63,6 +63,8 @@ class MinAIMetrics {
         // Load configuration from globals if available
         if (isset($GLOBALS['minai_metrics_enabled'])) {
             $this->metricsEnabled = (bool)$GLOBALS['minai_metrics_enabled'];
+        } else {
+            $this->metricsEnabled = false;
         }
         
         if (isset($GLOBALS['minai_metrics_file'])) {

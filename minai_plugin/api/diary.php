@@ -5,8 +5,8 @@ header("Access-Control-Allow-Headers: X-Requested-With, Content-Type, Authorizat
 require_once("../logger.php");
 
 $path = "..".DIRECTORY_SEPARATOR."..".DIRECTORY_SEPARATOR."..".DIRECTORY_SEPARATOR;
-require_once($path . "conf".DIRECTORY_SEPARATOR."conf.php");
-require_once($path. "lib" .DIRECTORY_SEPARATOR."{$GLOBALS["DBDRIVER"]}.class.php");
+//require_once($path . "conf".DIRECTORY_SEPARATOR."conf_.php");
+require_once("/var/www/html/HerikaServer/lib/postgresql.class.php"); 
 $GLOBALS["db"] = new sql();
 
 try {
@@ -17,7 +17,7 @@ try {
     echo json_encode([
         'status' => 'success',
         'entries' => $entries,
-        'playerName' => $GLOBALS["PLAYER_NAME"]
+        'playerName' => $GLOBALS["PLAYER_NAME"] ?? 'unknown'
     ]);
 
 } catch (Exception $e) {

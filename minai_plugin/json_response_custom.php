@@ -9,7 +9,7 @@ require_once(__DIR__."/config.php");
 require_once(__DIR__."/globals.php");
 
 // add emotions
-if ($GLOBALS['use_emotions_expression']) {
+if ($GLOBALS['use_emotions_expression'] ?? false) {
     if (!array_key_exists("emotion", $GLOBALS["responseTemplate"])) {
         $GLOBALS["responseTemplate"]["emotion"] = 
 		"calm|surprised|aroused|desire|love|happy|amusement|gratitude|proud|anxious|fearful|panic|grieving|envious|jealous|sad|disappointed|ashamed|angry|offended|disgusted|sarcastic";
@@ -17,6 +17,20 @@ if ($GLOBALS['use_emotions_expression']) {
     if (!array_key_exists("emotion_intensity", $GLOBALS["responseTemplate"])) {
         $GLOBALS["responseTemplate"]["emotion_intensity"] = "low|moderate|strong";
     }
+
+    if (!array_key_exists("associated_color", $GLOBALS["responseTemplate"])) {
+        $GLOBALS["responseTemplate"]["associated_color"] = "the color you imagine associated with this context"; //", leave blank if you can't make an association";
+    }
+    if (!array_key_exists("associated_smell", $GLOBALS["responseTemplate"])) {
+        $GLOBALS["responseTemplate"]["associated_smell"] = "the smell you would associate with this context";
+    }
+    if (!array_key_exists("associated_sound", $GLOBALS["responseTemplate"])) {
+        $GLOBALS["responseTemplate"]["associated_sound"] = "the sound you hear most relevant to this scene";
+    }
+  
+    // TODO remember to fill the schema also 
+  
+    
     /*    
     $GLOBALS["responseTemplate"] = array_merge($GLOBALS["responseTemplate"], [
         //"emotion" => "calm|arousal|desire|love|happy|gratitude|pride|fear|apprehension|panic|anxiety|grief|envy|jealousy|disappointment|shame|embarrassment|anger|rage|resentment|disgust",
@@ -138,10 +152,19 @@ if ($GLOBALS['use_emotions_expression']) {
     $GLOBALS["responseTemplate"]["mood"] = $crt_moods;
 }
 
-$GLOBALS["responseTemplate"]["message"] = "{$GLOBALS["HERIKA_NAME"]}'s response as lines of dialogue in plain text without formatting";
-$GLOBALS["responseTemplate"]["target"] = "the Name of the character who is the target of the action or the Name of the destination location if the action is a movement action";
-$GLOBALS["responseTemplate"]["listener"] = "specify the Name of the character who {$GLOBALS["HERIKA_NAME"]} is directly talking to";
-$GLOBALS["responseTemplate"]["item"] = "Item Name when using GiveItemTo or PickupItem actions, Spell Name when using action CastSpell, amount of gold written as number with single quotes (like '50') when using action GiveGoldTo"; 
+// $messageDescription = "lines of {$GLOBALS["HERIKA_NAME"]}'s dialogue";
+//v1: $GLOBALS["responseTemplate"]["message"] = "{$GLOBALS["HERIKA_NAME"]}'s response as lines of dialogue in plain text without formatting";
+//v2:
+if (isset($GLOBALS["responseTemplate"]["message"])) {
+    if ((stripos($GLOBALS["responseTemplate"]["message"],"lines of ") !== false) && (stripos($GLOBALS["responseTemplate"]["message"]," dialogue") !== false)) {
+        $GLOBALS["responseTemplate"]["message"] = "output the dialogue for the character {$GLOBALS["HERIKA_NAME"]}, as unformatted plain text, with no markdown or styling";
+    }
+}
+
+//$GLOBALS["responseTemplate"]["target"] = "the Name of the character who is the target of the action or the Name of the destination location if the action is a movement action";
+// "specify who {$GLOBALS["HERIKA_NAME"]} is talking to, comma separated, max two listeners, in addressing order"
+//$GLOBALS["responseTemplate"]["listener"] = "specify the Name of the character who {$GLOBALS["HERIKA_NAME"]} is directly talking to";
+//$GLOBALS["responseTemplate"]["item"] = "Item Name when using GiveItemTo or PickupItem actions, Spell Name when using action CastSpell, amount of gold written as number with single quotes (like '50') when using action GiveGoldTo"; 
 //"item"=>"item name (REQUIRED when action is GiveItemTo or PickupItem or CastSpell - use exact item name from inventory or spell name from spells) OR amount of gold (REQUIRED when action is GiveGoldTo - number as string, e.g. '50')"
 
 if (!array_key_exists("probability", $GLOBALS["responseTemplate"])) {

@@ -1,14 +1,13 @@
-# ⚠️❗️ 🚨 THIS PROJECT IS DEPRECATED 🚨 ❗️⚠️
-
-**This project is no longer maintained. Please use SkyrimNet instead as an alternative to CHIM/MinAI: [SkyrimNet](https://github.com/MinLL/SkyrimNet-GamePlugin/tree/main).**
-
 # MinAI
+
+**Note: This is a fork maintained by id1001. Min is no longer maintaining this project. Min has started a new project, SkyrimNet, as an alternative to CHIM/MinAI: [SkyrimNet](https://github.com/MinLL/SkyrimNet-GamePlugin/tree/main).**
+
+# What is MinAI
 
 A significant expansion to CHIM that brings AI to the entirety of the Skyrim world, and bridges LLMs with various Skyrim Mods. 
 
 Documentation for modders can be found [here](https://github.com/MinLL/MinAI/blob/main/ModdersGuide.md). FAQ can be found [here](https://github.com/MinLL/MinAI/blob/main/FAQ.md).
 
-[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/S6S51B7MJA)
  
 ## Description
 
@@ -67,7 +66,7 @@ This mod requires an openrouter.ai account or local model setup. We recommend us
 
 ### CHIM-Specific Configuration Options:
 (found in File Explorer: \\wsl.localhost\DwemerAI4Skyrim3\var\www\html\HerikaServer\ext\minai_plugin\config.php)
-(You can easily access this folder by running the tools/AI-FF Plugins Folder file in your DwemerAI4Skyrim3 directory)
+
 * force_voice_type = Force the voice type sent to xtts to be the NPC's base voice type. This is useful for compatibility with Mantella's xtts server.
 * disable_nsfw = Globally disable all NSFW functionality.
 * restrict_nonfollower_functions = By default, CHIM will have all of its actions available to all NPC's. This option disables functions that make sense only for followers, when interacting with non-follower NPC's.
@@ -103,10 +102,9 @@ This mod requires an openrouter.ai account or local model setup. We recommend us
 
 ### Nether's Follower Framework (NFF)
 * Allows the player to order followers to start / stop looting the nearby area.
-* This will be expanded greatly in the future to provide further integrations.
 
 ### Frostfall
-* The NPCs are aware of the temprature of the environment, if the player looks cold, how warmly people are dressed, and if someone is wet.
+* The NPCs are aware of the temperature of the environment, if the player looks cold, how warmly people are dressed, and if someone is wet.
 * The NPCs know if you are near a fire, and if you need to be due to the cold. 
 * NPCs know if someone is nearing frostbite or has it, or if someone is nearing death in the cold.
 
@@ -162,7 +160,7 @@ This mod requires an openrouter.ai account or local model setup. We recommend us
 ### Performance Improvements
 * Reduced CHIM server/database load by 50-80%
 * Optimized context system for better LLM processing
-* Added context slop cleanup feature (experimental)
+* Added context slop cleanup feature 
 * Improved action usage across all models
 
 ### Item Management System
